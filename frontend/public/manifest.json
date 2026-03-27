@@ -1,0 +1,26 @@
+{
+  "name": "Link Vault",
+  "short_name": "Link Vault",
+  "description": "Save and organise your links",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8F9FB",
+  "theme_color": "#1B2A4A",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "GET",
+    "params": {
+      "url": "url",
+      "text": "text",
+      "title": "title"
+    }
+  }
+}

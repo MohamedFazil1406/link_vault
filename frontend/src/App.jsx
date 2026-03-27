@@ -8,6 +8,7 @@ import Linklist from './components/linklist.jsx'
 import CollectionsPage from './components/collectionPage.jsx'
 import AddLinkModal from './components/addlinkbtn.jsx'
 import AddCollectionModal from './components/addcollectionbtn.jsx'  // FIX: was "AddCollectionModel" (wrong name, never matched the JSX usage)
+import ShareTarget from './components/ShareTarget.jsx'
 // api import
 import { 
   getAllLinks, 
@@ -33,6 +34,14 @@ export default function App() {
   const [filterDomain, setFilterDomain] = useState(null);
   const [filterDate, setFilterDate] = useState(null); // "today" | "week" | "month" | null
   const [showFilters, setShowFilters] = useState(false);
+
+  // Handle incoming shares from Android share sheet
+  const handleIncomingShare = ({ url, name }) => {
+    setEditingLink({ url, name, id: null });
+    setShowLinkModal(true);
+    // Clean the URL so refreshing doesn't re-trigger the share
+    window.history.replaceState({}, "", "/");
+  };
 
   // Load data from backend on mount
   useEffect(() => {
@@ -159,6 +168,10 @@ export default function App() {
 
   return (
     <div className="ls-app">
+      {/* Handles /share-target?url=... from Android share sheet */}
+      {window.location.pathname === "/share-target" && (
+        <ShareTarget onShare={handleIncomingShare} />
+      )}
       <Sidebar
         onGoHome={() => {
           setActiveCollectionId(null);
