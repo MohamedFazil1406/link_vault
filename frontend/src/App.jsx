@@ -21,6 +21,12 @@ import {
 } from "./api.js";  // FIX: removed unused "updateCollection" import (ESLint error)
 
 export default function App() {
+  // When opened via Android share sheet, render ONLY the save bottom sheet
+  // so it feels like a popup rather than the full app
+  if (window.location.pathname === "/share-target") {
+    return <ShareTarget />;
+  }
+
   const [collections, setCollections] = useState([]);
   const [links, setLinks] = useState([]);
   const [activeCollectionId, setActiveCollectionId] = useState(null);
@@ -168,10 +174,6 @@ export default function App() {
 
   return (
     <div className="ls-app">
-      {/* Handles /share-target?url=... from Android share sheet */}
-      {window.location.pathname === "/share-target" && (
-        <ShareTarget onShare={handleIncomingShare} />
-      )}
       <Sidebar
         onGoHome={() => {
           setActiveCollectionId(null);
