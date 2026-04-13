@@ -32,12 +32,16 @@ export default function ShareTarget() {
     if (!url) return;
     setStatus("saving");
     try {
-      await addLink({
+      const result = await addLink({
         url,
         name: name || url,
         notes,
         collectionId: collectionId ? parseInt(collectionId) : null,
       });
+      if (result.duplicate) {
+        setStatus("duplicate");
+        return;
+      }
       setStatus("saved");
       // Go back to whatever app they were using
       setTimeout(() => {
@@ -125,6 +129,11 @@ export default function ShareTarget() {
               Failed to save. Check your connection.
             </p>
           )}
+          {status === "duplicate" && (
+            <p style={{ color: "#f59e0b", fontSize: "0.8rem", margin: 0 }}>
+              ⚠️ This link is already in your vault!
+            </p>
+          )}
         </div>
 
         {/* Footer */}
@@ -134,11 +143,11 @@ export default function ShareTarget() {
             onClick={handleSave}
             disabled={status === "saving" || status === "saved"}
             style={{
-              background: status === "saved" ? "#22c55e" : undefined,
+              background: status === "saved" ? "#22c55e" : status === "duplicate" ? "#f59e0b" : undefined,
               transition: "background 0.2s"
             }}
           >
-            {status === "saving" ? "Saving..." : status === "saved" ? "Saved ✓" : "Save Link"}
+            {status === "saving" ? "Saving..." : status === "saved" ? "Saved ✓" : status === "duplicate" ? "Already Saved" : "Save Link"}
           </button>
           <button className="btn-secondary" onClick={handleCancel}>
             Cancel

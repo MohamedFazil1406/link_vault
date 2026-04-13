@@ -114,6 +114,10 @@ export default function App() {
       setLinks(links.map(l => l.id === existingId ? updated : l));
     } else {
       const newLink = await addLink({ ...linkData, collectionId: colId, notes, tags });
+      if (newLink.duplicate) {
+        alert("⚠️ This link is already in your vault!");
+        return;
+      }
       setLinks([...links, newLink]);
     }
     setShowLinkModal(false);

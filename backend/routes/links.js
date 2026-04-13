@@ -63,6 +63,13 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { name, url, notes = '', collectionId = null, tags = [] } = req.body;
+
+    // check for duplicate URL
+    const existing = await pool.query('SELECT * FROM links WHERE url = $1', [url]);
+    if (existing.rows.length > 0) {
+      return res.status(200).json({ ...normalize(existing.rows[0]), duplicate: true });
+    }
+
     const id = Date.now();
 
     // auto-tag by domain

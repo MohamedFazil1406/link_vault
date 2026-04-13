@@ -74,6 +74,15 @@ document.getElementById("save").addEventListener("click", async () => {
 
     if (!res.ok) throw new Error("Save failed");
 
+    const data = await res.json();
+
+    if (data.duplicate) {
+      document.getElementById("status").textContent = "Already in your vault!";
+      document.getElementById("status").style.color = "orange";
+      setTimeout(() => window.close(), 1200);
+      return;
+    }
+
     // Show a brief success message before closing
     document.getElementById("status").textContent = "Saved!";
     document.getElementById("status").style.color = "green";
