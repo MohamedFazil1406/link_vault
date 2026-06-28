@@ -1,82 +1,70 @@
-.filter-bar {
+.lv-filterbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px 0;
-  margin-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
   align-items: center;
-
-  /* slide in animation */
-  overflow: hidden;
-  animation: filterSlideDown 0.2s ease;
+  gap: 8px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+  animation: fb-in 0.15s ease;
 }
 
-.filter-group {
+@keyframes fb-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fb-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
-.filter-label {
-  font-size: 0.75rem;
+.fb-label {
+  font-size: 0.7rem;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-4);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-right: 2px;
+  letter-spacing: 0.06em;
+  padding-right: 2px;
 }
 
-.filter-chip {
+.fb-chip {
   padding: 3px 10px;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  background: white;
-  color: #334155;
-  font-size: 0.8rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-2);
+  font-size: 0.78rem;
+  font-family: inherit;
   cursor: pointer;
-  transition: 0.15s ease;
+  transition: all var(--transition);
 }
 
-.filter-chip:hover {
-  border-color: #f59e0b;
-  color: #f59e0b;
+.fb-chip:hover { border-color: var(--amber); color: var(--amber); }
+.fb-chip.on { background: var(--amber); border-color: var(--amber); color: #fff; }
+
+.fb-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
 }
 
-.filter-chip.active {
-  background: #f59e0b;
-  border-color: #f59e0b;
-  color: white;
-}
-
-.filter-clear {
+.fb-clear {
   margin-left: auto;
   background: none;
   border: none;
-  color: #94a3b8;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  color: var(--text-4);
   cursor: pointer;
-  padding: 3px 8px;
+  font-family: inherit;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition);
 }
-
-.filter-clear:hover {
-  color: #f44336;
-}
+.fb-clear:hover { color: #ef4444; }
 
 @media (max-width: 768px) {
-  .filter-bar {
-    gap: 8px;
-    padding: 8px 0;
-  }
-}
-@keyframes filterSlideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  .lv-filterbar { padding: 8px 14px; }
 }

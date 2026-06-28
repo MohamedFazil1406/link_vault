@@ -1,32 +1,22 @@
 import { useState, useEffect } from "react";
-import './App.css'
-// components import
-import Header from './components/Header.jsx'
+import './App.css';
+import Header from './components/Header.jsx';
 import FilterBar from './components/FilterBar.jsx';
-import Sidebar from './components/sidebar.jsx'
-import Linklist from './components/linklist.jsx'
-import CollectionsPage from './components/collectionPage.jsx'
-import AddLinkModal from './components/addlinkbtn.jsx'
-import AddCollectionModal from './components/addcollectionbtn.jsx'  // FIX: was "AddCollectionModel" (wrong name, never matched the JSX usage)
-import ShareTarget from './components/ShareTarget.jsx'
-// api import
-import { 
-  getAllLinks, 
-  addLink, 
-  deleteLink, 
-  updateLink,
-  getAllCollections,
-  addCollection,
-  deleteCollection,
-} from "./api.js";  // FIX: removed unused "updateCollection" import (ESLint error)
+import Sidebar from './components/sidebar.jsx';
+import Linklist from './components/linklist.jsx';
+import CollectionsPage from './components/collectionPage.jsx';
+import AddLinkModal from './components/addlinkbtn.jsx';
+import AddCollectionModal from './components/addcollectionbtn.jsx';
+import ShareTarget from './components/ShareTarget.jsx';
+import {
+  getAllLinks, addLink, deleteLink, updateLink,
+  getAllCollections, addCollection, deleteCollection,
+} from "./api.js";
 
 export default function App() {
-  // When opened via Android share sheet, render ONLY the save bottom sheet
-  // so it feels like a popup rather than the full app
-  if (window.location.pathname === "/share-target") {
-    return <ShareTarget />;
-  }
+  if (window.location.pathname === "/share-target") return <ShareTarget />;
 
+  const [dark, setDark] = useState(() => localStorage.getItem('lv-theme') === 'dark');
   const [collections, setCollections] = useState([]);
   const [links, setLinks] = useState([]);
   const [activeCollectionId, setActiveCollectionId] = useState(null);
@@ -38,236 +28,167 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [filterTag, setFilterTag] = useState(null);
   const [filterDomain, setFilterDomain] = useState(null);
-  const [filterDate, setFilterDate] = useState(null); // "today" | "week" | "month" | null
+  const [filterDate, setFilterDate] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Handle incoming shares from Android share sheet
-  const handleIncomingShare = ({ url, name }) => {
-    setEditingLink({ url, name, id: null });
-    setShowLinkModal(true);
-    // Clean the URL so refreshing doesn't re-trigger the share
-    window.history.replaceState({}, "", "/");
-  };
-
-  // Load data from backend on mount
+  // Apply dark mode to <html>
   useEffect(() => {
-    async function loadData() {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    localStorage.setItem('lv-theme', dark ? 'dark' : 'light');
+  }, [dark]);
+
+  useEffect(() => {
+    async function load() {
       try {
-        const [fetchedLinks, fetchedCollections] = await Promise.all([
-          getAllLinks(),
-          getAllCollections()
-        ]);
-        setLinks(fetchedLinks || []);
-        setCollections(fetchedCollections || []);
-      } catch (err) {
-        console.error("Server is down!", err);
+        const [l, c] = await Promise.all([getAllLinks(), getAllCollections()]);
+        setLinks(l || []);
+        setCollections(c || []);
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
     }
-    loadData();
+    load();
   }, []);
 
-  // FIX: search now checks "name" not "title" — matches what the backend stores
   const filteredLinks = links.filter(link => {
-  const nameToCheck = link.name || "";
-
-  const matchesSearch = nameToCheck.toLowerCase().includes(searchTerm.toLowerCase());
-
-  const matchesCollection = activeCollectionId
-    ? link.collectionId === activeCollectionId
-    : true;
-
-  const matchesTag = filterTag
-    ? link.tags?.includes(filterTag)
-    : true;
-
-  const matchesDomain = filterDomain
-    ? link.tags?.includes(filterDomain)
-    : true;
-
-  const matchesDate = (() => {
-    if (!filterDate || !link.created_at) return true;
-    const linkDate = new Date(link.created_at);
-    const now = new Date();
-    if (filterDate === "today") {
-      return linkDate.toDateString() === now.toDateString();
-    }
-    if (filterDate === "week") {
-      const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-      return linkDate >= weekAgo;
-    }
-    if (filterDate === "month") {
-      const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
-      return linkDate >= monthAgo;
-    }
-    return true;
-  })();
-
-  return matchesSearch && matchesCollection && matchesTag && matchesDomain && matchesDate;
+    const matchesSearch = (link.name || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCollection = activeCollectionId ? link.collectionId === activeCollectionId : true;
+    const matchesTag = filterTag ? link.tags?.includes(filterTag) : true;
+    const matchesDomain = filterDomain ? link.tags?.includes(filterDomain) : true;
+    const matchesDate = (() => {
+      if (!filterDate || !link.created_at) return true;
+      const d = new Date(link.created_at), now = new Date();
+      if (filterDate === "today") return d.toDateString() === now.toDateString();
+      if (filterDate === "week") return d >= new Date(now - 7 * 86400000);
+      if (filterDate === "month") return d >= new Date(now - 30 * 86400000);
+      return true;
+    })();
+    return matchesSearch && matchesCollection && matchesTag && matchesDomain && matchesDate;
   });
 
-  const addOrUpdateLinkHandler = async (linkData, colId, notes, tags, existingId) => {
-  try {
-    if (existingId) {
-      const updated = await updateLink(existingId, { ...linkData, collectionId: colId, notes, tags });
-      setLinks(links.map(l => l.id === existingId ? updated : l));
-    } else {
-      const newLink = await addLink({ ...linkData, collectionId: colId, notes, tags });
-      if (newLink.duplicate) {
-        alert("⚠️ This link is already in your vault!");
-        return;
-      }
-      setLinks([...links, newLink]);
-    }
-    setShowLinkModal(false);
-    setEditingLink(null);
-  } catch (err) {
-    alert("Failed to save link. Is the server running?");
-  }
-  };
-
-  const deleteLinkHandler = async (id) => {
-    if (window.confirm("Are you sure you want to delete this link?")) {
-      try {
-        await deleteLink(id);
-        setLinks(links.filter(l => l.id !== id));
-      } catch (err) {
-        alert("Failed to delete link. Is the server running?");
-      }
-    }
-  };
-
-  const addCollectionHandler = async (collectionData) => {
+  const saveLink = async (linkData, colId, notes, tags, existingId) => {
     try {
-      const newCollection = await addCollection(collectionData);
-      setCollections([...collections, newCollection]);
-      setShowCollectionModal(false);
-    } catch (err) {
-      console.error("Failed to add collection", err);
-      alert("Could not add collection. Is the server running?");
-    }
-  };
-
-  // FIX: these two handlers were used in JSX but never defined — caused a crash on collections view
-  const deleteCollectionHandler = async (id) => {
-    if (window.confirm("Delete this collection?")) {
-      try {
-        await deleteCollection(id);
-        setCollections(collections.filter(c => c.id !== id));
-      } catch (err) {
-        alert("Failed to delete collection. Is the server running?");
+      if (existingId) {
+        const updated = await updateLink(existingId, { ...linkData, collectionId: colId, notes, tags });
+        setLinks(links.map(l => l.id === existingId ? updated : l));
+      } else {
+        const newLink = await addLink({ ...linkData, collectionId: colId, notes, tags });
+        if (newLink.duplicate) { alert("Already in your vault!"); return; }
+        setLinks([...links, newLink]);
       }
-    }
+      setShowLinkModal(false);
+      setEditingLink(null);
+    } catch { alert("Failed to save link."); }
   };
 
-  const editCollectionHandler = async (id, newName) => {
-    console.log("Edit collection", id, newName);
+  const deleteLink_ = async (id) => {
+    if (!window.confirm("Delete this link?")) return;
+    try {
+      await deleteLink(id);
+      setLinks(links.filter(l => l.id !== id));
+    } catch { alert("Failed to delete."); }
   };
 
-  const exportHandler = () => {
-    const dataStr = JSON.stringify(links, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "link-vault-export.json";
-    a.click();
-    URL.revokeObjectURL(url);
+  const saveCollection = async (data) => {
+    try {
+      const c = await addCollection(data);
+      setCollections([...collections, c]);
+      setShowCollectionModal(false);
+    } catch { alert("Failed to create collection."); }
   };
+
+  const deleteCollection_ = async (id) => {
+    if (!window.confirm("Delete this collection?")) return;
+    try {
+      await deleteCollection(id);
+      setCollections(collections.filter(c => c.id !== id));
+    } catch { alert("Failed to delete."); }
+  };
+
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify(links, null, 2)], { type: "application/json" });
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "linvault-export.json" });
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+
+  const goHome = () => { setActiveCollectionId(null); setSearchTerm(""); setView("home"); };
 
   return (
-    <div className="ls-app">
+    <div className="lv-app">
       <Sidebar
-        onGoHome={() => {
-          setActiveCollectionId(null);
-          setSearchTerm("");
-          setView("home");
-        }}
-        onGoCollections={() => setView("collections")}  // FIX: sidebar "Collections" item now navigates correctly
+        onGoHome={goHome}
+        onGoCollections={() => setView("collections")}
         onAddCollection={() => setShowCollectionModal(true)}
-        onSelectCollection={(id) => {
-          setActiveCollectionId(id);
-          setView("home");
-        }}
-        onExport={exportHandler}
+        onExport={exportData}
+        dark={dark}
+        onToggleDark={() => setDark(d => !d)}
+        collections={collections}
+        activeCollectionId={activeCollectionId}
+        onSelectCollection={(id) => { setActiveCollectionId(id); setView("home"); }}
       />
 
-      <div className="ls-main">
+      <div className="lv-main">
         <Header
-            onAddLink={() => setShowLinkModal(true)}
-            onExport={exportHandler}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            showFilters={showFilters}
-            onToggleFilters={() => setShowFilters(f => !f)}
-            showFilterBtn={view === "home"}
-          />
+          onAddLink={() => setShowLinkModal(true)}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          showFilters={showFilters}
+          onToggleFilters={() => setShowFilters(f => !f)}
+          showFilterBtn={view === "home"}
+          activeCollectionId={activeCollectionId}
+          collections={collections}
+          onGoHome={goHome}
+        />
 
-          {view === "home" && showFilters && (
-            <FilterBar
+        {view === "home" && showFilters && (
+          <FilterBar
+            links={links}
+            filterTag={filterTag}
+            filterDomain={filterDomain}
+            filterDate={filterDate}
+            onFilterTag={setFilterTag}
+            onFilterDomain={setFilterDomain}
+            onFilterDate={setFilterDate}
+            onClear={() => { setFilterTag(null); setFilterDomain(null); setFilterDate(null); }}
+          />
+        )}
+
+        <div className="lv-content">
+          {loading ? (
+            <div className="lv-loading"><div className="lv-spinner" /></div>
+          ) : view === "home" ? (
+            <Linklist
+              links={filteredLinks}
+              onEditLink={(link) => { setEditingLink(link); setShowLinkModal(true); }}
+              onDeleteLink={(link) => deleteLink_(link.id)}
+            />
+          ) : (
+            <CollectionsPage
+              collections={collections}
               links={links}
-              filterTag={filterTag}
-              filterDomain={filterDomain}
-              filterDate={filterDate}
-              onFilterTag={setFilterTag}
-              onFilterDomain={setFilterDomain}
-              onFilterDate={setFilterDate}
-              onClear={() => {
-                setFilterTag(null);
-                setFilterDomain(null);
-                setFilterDate(null);
-              }}
+              onSelectCollection={(id) => { setActiveCollectionId(id); setView("home"); }}
+              onDeleteCollection={deleteCollection_}
             />
           )}
-
-        {loading ? (
-          <div className="ls-loading-container">
-            <div className="ls-spinner"></div>
-          </div>
-        ) : (
-          <div className="ls-content">
-            {view === "home" && (
-              <Linklist
-                links={filteredLinks}
-                onEditLink={(link) => {
-                  setEditingLink(link);
-                  setShowLinkModal(true);
-                }}
-                onDeleteLink={(link) => deleteLinkHandler(link.id)}  // FIX: linklist passes the full link object, not just id
-              />
-            )}
-
-            {view === "collections" && (  // FIX: removed redundant "!loading &&" check (already inside the else branch)
-              <CollectionsPage
-                collections={collections}
-                links={links}
-                onSelectCollection={(id) => { setActiveCollectionId(id); setView("home"); }}
-                onDeleteCollection={deleteCollectionHandler}
-                onEditCollection={editCollectionHandler}
-              />
-            )}
-          </div>
-        )}
+        </div>
       </div>
 
       {showLinkModal && (
         <AddLinkModal
-        onClose={() => {
-          setShowLinkModal(false);
-          setEditingLink(null);
-        }}
-        onAdd={addOrUpdateLinkHandler}
-        collections={collections}
-        editingLink={editingLink}
-        allTags={[...new Set(links.flatMap(l => l.tags || []))]}
-      />
+          onClose={() => { setShowLinkModal(false); setEditingLink(null); }}
+          onAdd={saveLink}
+          collections={collections}
+          editingLink={editingLink}
+          allTags={[...new Set(links.flatMap(l => l.tags || []))]}
+        />
       )}
 
       {showCollectionModal && (
-        <AddCollectionModal   // FIX: was "AddCollectionModal" in JSX but imported as "AddCollectionModel" — now both match
+        <AddCollectionModal
           onClose={() => setShowCollectionModal(false)}
-          onAdd={addCollectionHandler}
+          onAdd={saveCollection}
         />
       )}
     </div>
