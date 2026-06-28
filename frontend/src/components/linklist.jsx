@@ -1,63 +1,60 @@
 import './CSS/linklist.css';
 
-export default function LinkList({ links, onEditLink, onDeleteLink }) {
+function getFavicon(url) {
+  try { return new URL(url).hostname.replace('www.', '')[0].toUpperCase(); }
+  catch { return '?'; }
+}
 
+export default function Linklist({ links, onEditLink, onDeleteLink }) {
   if (links.length === 0) {
     return (
-      <div className="ls-empty-state">
-        <div className="ls-empty-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
+      <div className="lv-empty">
+        <div className="lv-empty-icon">
+          <svg viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
         </div>
-        <h3 className="ls-empty-title">No links yet</h3>
-        <p className="ls-empty-text">Hit the + button to save your first link</p>
+        <h3>No links yet</h3>
+        <p>Hit "Add link" to save your first one</p>
       </div>
     );
   }
 
   return (
-    <div className="link-list">
-      {links.map(link => (
-        <div key={link.id} className="link-item">
+    <div className="lv-list">
+      {links.map(link => {
+        const displayTags = (link.tags || []).filter(t => !t.includes('.'));
+        return (
+          <div key={link.id} className="lv-link">
+            <div className="lv-link-top">
+              <div className="lv-favicon">{getFavicon(link.url)}</div>
 
-          {/* top row: title + action buttons */}
-          <div className="link-top-row">
-            <a href={link.url} target="_blank" rel="noreferrer" className="link-title">
-              {link.name}
-            </a>
-            <div className="link-actions">
-              <button className="edit-btn" onClick={() => onEditLink(link)} title="Edit link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.416 7.82 4.15-4.15L8 8l-6.207 6.207a.5.5 0 0 0 .707.707l.5-.5z"/>
-                </svg>
-              </button>
-              <button className="delete-btn" onClick={() => onDeleteLink(link)} title="Delete link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
-                  <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H13a1 1 0 0 1 1 1v1Zm-3 0H5a.5.5 0 0 0-.5.5V4h7V3.5a.5.5 0 0 0-.5-.5Z"/>
-                </svg>
-              </button>
-            </div>
-          </div>
+              <a href={link.url} target="_blank" rel="noreferrer" className="lv-link-name">
+                {link.name}
+              </a>
 
-          {/* hover reveal: notes left, tags right */}
-          {(link.notes || link.tags?.length > 0) && (
-            <div className="link-hover-row">
-              {link.notes && <p className="link-notes">{link.notes}</p>}
-              {link.tags?.length > 0 && (
-                <div className="link-tags">
-                  {link.tags.filter(t => !t.includes('.')).map(tag => (
-                    <span key={tag} className="link-tag">{tag}</span>
+              {displayTags.length > 0 && (
+                <div className="lv-link-tags">
+                  {displayTags.slice(0, 3).map(t => (
+                    <span key={t} className="lv-tag">{t}</span>
                   ))}
                 </div>
               )}
-            </div>
-          )}
 
-        </div>
-      ))}
+              <div className="lv-link-actions">
+                <button className="lv-action-btn edit" onClick={() => onEditLink(link)} title="Edit">
+                  <svg viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+                <button className="lv-action-btn del" onClick={() => onDeleteLink(link)} title="Delete">
+                  <svg viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </div>
+
+            {link.notes && (
+              <div className="lv-link-notes">{link.notes}</div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

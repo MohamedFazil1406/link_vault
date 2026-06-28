@@ -1,123 +1,123 @@
+import { useState, useEffect } from 'react';
 import './CSS/links.css';
-import { useState } from "react";
 
-export default function AddLinkModal({ onClose, onAdd, collections, editingLink, allTags = [] }) {
-  const [name, setName] = useState(editingLink?.name || "");
-  const [url, setUrl] = useState(editingLink?.url || "");
-  const [collectionId, setCollectionId] = useState(editingLink?.collectionId || "");
-  const [notes, setNotes] = useState(editingLink?.notes || "");
-  const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState(editingLink?.tags || []);
+export default function AddLinkModal({ onClose, onAdd, collections, editingLink, allTags }) {
+  const [url, setUrl]         = useState('');
+  const [name, setName]       = useState('');
+  const [notes, setNotes]     = useState('');
+  const [colId, setColId]     = useState('');
+  const [tags, setTags]       = useState([]);
+  const [tagInput, setTagInput] = useState('');
 
-  const addTag = (tag) => {
-    const trimmed = (tag || tagInput).trim().toLowerCase();
-    if (trimmed && !tags.includes(trimmed)) setTags([...tags, trimmed]);
-    setTagInput("");
+  useEffect(() => {
+    if (editingLink) {
+      setUrl(editingLink.url || '');
+      setName(editingLink.name || '');
+      setNotes(editingLink.notes || '');
+      setColId(editingLink.collectionId ? String(editingLink.collectionId) : '');
+      setTags(editingLink.tags?.filter(t => !t.includes('.')) || []);
+    }
+  }, [editingLink]);
+
+  const addTag = () => {
+    const t = tagInput.trim().toLowerCase();
+    if (t && !tags.includes(t)) setTags([...tags, t]);
+    setTagInput('');
   };
 
-  const removeTag = (tag) => setTags(tags.filter(t => t !== tag));
+  const removeTag = (t) => setTags(tags.filter(x => x !== t));
 
-  const handleAdd = () => {
-    if (!name || !url) return alert("Enter both a name and URL");
-    onAdd({ name, url }, collectionId ? parseInt(collectionId) : null, notes, tags, editingLink?.id);
-    onClose();
+  const suggestions = (allTags || [])
+    .filter(t => !t.includes('.') && !tags.includes(t))
+    .slice(0, 8);
+
+  const handleSubmit = () => {
+    if (!url.trim()) return;
+    onAdd(
+      { url: url.trim(), name: name.trim() || url.trim() },
+      colId ? Number(colId) : null,
+      notes.trim(),
+      tags,
+      editingLink?.id || null
+    );
   };
-
-  const suggestions = allTags.filter(t => !tags.includes(t) && !t.includes('.'));
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
-
-        {/* Header */}
-        <div className="modal-header">
-          <div className="modal-icon">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-            </svg>
-          </div>
-          <h3 className="modal-title">{editingLink ? "Edit Link" : "Add New Link"}</h3>
-          <p className="modal-subtitle">Organise your favourite resources easily.</p>
-        </div>
-
-        {/* Body */}
-        <div className="modal-body">
-          <input
-            className="modal-input"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Text label"
-          />
-          <input
-            className="modal-input"
-            value={url}
-            onChange={e => setUrl(e.target.value)}
-            placeholder="Paste link (URL)"
-          />
-          <textarea
-            className="modal-textarea"
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            placeholder="Notes (optional)"
-          />
-
-          {/* Tag input */}
-          <div className="tag-input-row">
-            <input
-              className="tag-input"
-              value={tagInput}
-              onChange={e => setTagInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addTag())}
-              placeholder="Add a tag..."
-            />
-            <button onClick={() => addTag()} className="tag-add-btn">+</button>
-          </div>
-
-          {/* Suggestions */}
-          {suggestions.length > 0 && (
-            <div className="tag-suggestions">
-              <span className="tag-suggestions-label">Existing tags:</span>
-              {suggestions.map(t => (
-                <button key={t} className="tag-suggestion-chip" onClick={() => addTag(t)}>
-                  + {t}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Selected pills */}
-          {tags.length > 0 && (
-            <div className="tag-pills">
-              {tags.map(tag => (
-                <span key={tag} className="tag-pill">
-                  {tag}
-                  <button onClick={() => removeTag(tag)} className="tag-remove">×</button>
-                </span>
-              ))}
-            </div>
-          )}
-
-          <select
-            className="modal-select"
-            value={collectionId}
-            onChange={e => setCollectionId(e.target.value)}
-          >
-            <option value="">No collection</option>
-            {collections?.map(col => (
-              <option key={col.id} value={col.id}>{col.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Footer */}
-        <div className="modal-footer">
-          <button className="btn-primary" onClick={handleAdd}>
-            {editingLink ? "Update Link" : "Add Link"}
+    <div className="lv-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="lv-modal">
+        <div className="lv-modal-header">
+          <span className="lv-modal-title">{editingLink?.id ? 'Edit link' : 'Add link'}</span>
+          <button className="lv-modal-close" onClick={onClose}>
+            <svg viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
         </div>
 
+        <div className="lv-modal-body">
+          <div>
+            <div className="lv-field-label">URL</div>
+            <input className="lv-input" placeholder="https://…" value={url} onChange={e => setUrl(e.target.value)} autoFocus />
+          </div>
+
+          <div>
+            <div className="lv-field-label">Name</div>
+            <input className="lv-input" placeholder="Give it a name…" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+
+          <div>
+            <div className="lv-field-label">Collection</div>
+            <select className="lv-select" value={colId} onChange={e => setColId(e.target.value)}>
+              <option value="">Unsorted</option>
+              {collections.map(c => (
+                <option key={c.id} value={String(c.id)}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div className="lv-field-label">Notes</div>
+            <textarea className="lv-textarea" placeholder="Optional notes…" value={notes} onChange={e => setNotes(e.target.value)} />
+          </div>
+
+          <div>
+            <div className="lv-field-label">Tags</div>
+            <div className="lv-tag-row">
+              <input
+                className="lv-tag-input"
+                placeholder="Add a tag…"
+                value={tagInput}
+                onChange={e => setTagInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
+              />
+              <button className="lv-tag-add" onClick={addTag}>+</button>
+            </div>
+
+            {suggestions.length > 0 && (
+              <div className="lv-tag-suggestions" style={{ marginTop: 6 }}>
+                {suggestions.map(t => (
+                  <button key={t} className="lv-tag-suggestion" onClick={() => setTags([...tags, t])}>{t}</button>
+                ))}
+              </div>
+            )}
+
+            {tags.length > 0 && (
+              <div className="lv-tag-pills" style={{ marginTop: 8 }}>
+                {tags.map(t => (
+                  <span key={t} className="lv-tag-pill">
+                    {t}
+                    <button className="lv-tag-remove" onClick={() => removeTag(t)}>×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="lv-modal-footer">
+          <button className="lv-btn-primary" onClick={handleSubmit}>
+            {editingLink?.id ? 'Save changes' : 'Save link'}
+          </button>
+          <button className="lv-btn-secondary" onClick={onClose}>Cancel</button>
+        </div>
       </div>
     </div>
   );
