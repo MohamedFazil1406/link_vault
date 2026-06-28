@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import collectionRoute from './routes/collections.js';
 import linkRoute from './routes/links.js';
+import './bot/bot.js';
 
 const app = express();
 
