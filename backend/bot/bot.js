@@ -42,6 +42,14 @@ async function flushBatch(channelId, channel) {
 
 // ── URL extractor ─────────────────────────────────────────────────────────────
 function extractUrls(text) {
+  // Strip Discord markdown links [text](url) → grab the url part
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '$2');
+  
+  // Also try adding https:// if someone pastes without it
+  if (!text.match(/https?:\/\//i)) {
+    text = 'https://' + text.trim();
+  }
+
   const regex = /https?:\/\/[^\s<>"]+/gi;
   return [...new Set(text.match(regex) || [])];
 }
