@@ -1,4 +1,4 @@
-// Run this ONCE to register slash commands with Discord:
+// Run ONCE after any command changes:
 // node bot/registerCommands.js
 
 import { REST, Routes, SlashCommandBuilder } from 'discord.js';
@@ -10,12 +10,18 @@ const commands = [
     .setDescription('Save a link to LinVault')
     .addStringOption(opt =>
       opt.setName('url')
-        .setDescription('The URL to save')
+        .setDescription('The URL to save (paste the full https:// link)')
         .setRequired(true)
     )
     .addStringOption(opt =>
       opt.setName('collection')
         .setDescription('Collection to save into (leave empty for Unsorted)')
+        .setRequired(false)
+        .setAutocomplete(true)
+    )
+    .addStringOption(opt =>
+      opt.setName('tags')
+        .setDescription('Tags to add — pick from your existing tags or type new ones (comma separated)')
         .setRequired(false)
         .setAutocomplete(true)
     ),

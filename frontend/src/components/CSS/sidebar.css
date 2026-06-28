@@ -6,142 +6,126 @@
 }
 
 .sidebar {
-    width: 45px;
-    height: 100vh;
-    background: var(--background);
-    border-right: 1px solid #e2e8f0;
-    padding: 10px 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    transition: width 0.25s ease;
+  width: 45px;
+  height: 100vh;
+  background: var(--background);
+  border-right: 1px solid #e2e8f0;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: width 0.25s ease;
+  overflow: hidden;       /* prevents sidebar itself from causing scroll */
+  flex-shrink: 0;
 }
 
 .sidebar:hover {
-    width: 180px;
+  width: 180px;
 }
 
 .sidebar .icon svg {
-    width: 20px;
-    height: 20px;
-    display: block;
-    stroke-width: 1.8;
-    flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: block;
+  stroke-width: 1.8;
+  flex-shrink: 0;
 }
 
 .dock-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    position: relative;
-    padding: 6px 8px;
-    border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  position: relative;
+  padding: 6px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
 .dock-item:hover {
-    background: #e2e8f0;
+  background: #e2e8f0;
 }
 
 .dock-item.add {
-    background: var(--accent);
-    border-radius: 5px;
+  background: var(--accent);
+  border-radius: 5px;
 }
 
 .label {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.2s;
-    font-size: 0.875rem;
-    color: var(--secondary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 0.875rem;
+  color: var(--secondary);
 }
 
 .sidebar:hover .label {
-    opacity: 1;
+  opacity: 1;
 }
 
 /* count badge */
 .count-badge {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: var(--primary);
-    color: #e2e8f0;
-    font-size: 12px;
-    padding: 2px 6px;
-    border-radius: 12px;
-    font-weight: bold;
-    min-width: 20px;
-    text-align: center;
-    z-index: 1;
-    pointer-events: none;
-    transition: all 0.2s ease;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--primary);
+  color: #e2e8f0;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-weight: bold;
+  min-width: 20px;
+  text-align: center;
+  z-index: 1;
+  pointer-events: none;
+  transition: all 0.2s ease;
 }
 
 .sidebar:not(:hover) .count-badge {
-    right: -50000px;
-}
-
-.export-btn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: white;
-  color: var(--secondary);
-  cursor: pointer;
-  font-size: 13px;
-  transition: 0.2s ease;
-}
-
-.export-btn:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  display: none;
 }
 
 /* Mobile */
 @media (max-width: 768px) {
-    .sidebar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        height: 70px;
-        flex-direction: row;
-        justify-content: space-around;
-        align-items: center;
-        padding: 0;
-        gap: 0;
-        border-top: 1px solid #ddd;  /* FIX: was "1px solif" (typo) */
-        background: #e2e8f0;
-        z-index: 100;
-    }
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100% !important;
+    height: 70px;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0;
+    gap: 0;
+    border-top: 1px solid #ddd;
+    border-right: none;
+    background: #e2e8f0;
+    z-index: 100;
+  }
 
-    .sidebar:hover {
-        width: 100%;
-    }
+  .icon {
+    font-size: 20px;
+    width: auto;
+  }
 
-    .icon {
-        font-size: 20px;
-        width: auto;
-    }
+  .label {
+    opacity: 1;
+    font-size: 10px;
+  }
 
-    .label {
-        opacity: 1;
-        font-size: 10px;
-    }
+  .dock-item {
+    flex-direction: column;
+    gap: 2px;
+  }
 
-    .dock-item {
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .dock-item.add .icon {
-        font-size: 22px;
-        font-weight: bold;
-    }
+  .dock-item.add .icon {
+    font-size: 22px;
+    font-weight: bold;
+  }
 }

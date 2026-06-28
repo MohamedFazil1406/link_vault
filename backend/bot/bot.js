@@ -9,8 +9,8 @@ const client = new Client({
   ],
 });
 
-// ── Batching: collect URLs per channel for 2s then flush ──────────────────────
-const batchMap = new Map(); // channelId → { urls: [], timer }
+// ── Batching ──────────────────────────────────────────────────────────────────
+const batchMap = new Map();
 
 function scheduleFlush(channelId, channel) {
   const entry = batchMap.get(channelId);
@@ -26,30 +26,27 @@ async function flushBatch(channelId, channel) {
 
   channel.send(`⏳ Got **${urls.length}** link${urls.length > 1 ? 's' : ''}. Classifying...`);
 
-  const results = await Promise.allSettled(urls.map(url => classifyAndSave(url, null)));
-
-  const saved = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
-  const failed = results.filter(r => r.status === 'rejected' || !r.value).length;
+  const results = await Promise.allSettled(urls.map(url => classifyAndSave(url, null, [])));
+  const saved = results.filter(r => r.status === 'fulfilled' && r.value && !r.value.duplicate).map(r => r.value);
+  const dupes = results.filter(r => r.status === 'fulfilled' && r.value?.duplicate).length;
+  const failed = results.filter(r => r.status === 'rejected').length;
 
   if (saved.length > 0) {
     const lines = saved.map(l => `• **${l.name}** → \`${l.url}\``).join('\n');
     channel.send(`✅ Saved ${saved.length} link${saved.length > 1 ? 's' : ''} to **Unsorted**:\n${lines}`);
   }
-  if (failed > 0) {
-    channel.send(`⚠️ ${failed} link${failed > 1 ? 's' : ''} failed to save.`);
-  }
+  if (dupes > 0) channel.send(`⚠️ ${dupes} link${dupes > 1 ? 's were' : ' was'} already in your vault.`);
+  if (failed > 0) channel.send(`❌ ${failed} link${failed > 1 ? 's' : ''} failed to save.`);
 }
 
 // ── URL extractor ─────────────────────────────────────────────────────────────
 function extractUrls(text) {
-  // Strip Discord markdown links [text](url) → grab the url part
-  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '$2');
-  
-  // Also try adding https:// if someone pastes without it
-  if (!text.match(/https?:\/\//i)) {
+  // Strip Discord markdown [text](url) → grab just the url
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '$2');
+  // If no protocol, try adding https://
+  if (!text.match(/https?:\/\//i) && text.includes('.')) {
     text = 'https://' + text.trim();
   }
-
   const regex = /https?:\/\/[^\s<>"]+/gi;
   return [...new Set(text.match(regex) || [])];
 }
@@ -67,8 +64,7 @@ async function classifyUrl(url) {
       messages: [
         {
           role: 'system',
-          content:
-            'You are a link classifier. Given a URL, return ONLY a JSON object with keys: "name" (short title, max 6 words), "category" (one word like Video/Article/Tool/Repo/Podcast/Other), "tags" (array of 2-3 lowercase strings). No markdown, no explanation.',
+          content: 'You are a link classifier. Given a URL, return ONLY a JSON object with keys: "name" (short title max 6 words), "category" (one word: Video/Article/Tool/Repo/Podcast/Other), "tags" (array of 2-3 lowercase strings). No markdown, no explanation.',
         },
         { role: 'user', content: `Classify this URL: ${url}` },
       ],
@@ -80,9 +76,8 @@ async function classifyUrl(url) {
   return JSON.parse(text);
 }
 
-// ── Save link to DB ───────────────────────────────────────────────────────────
-async function classifyAndSave(url, collectionId) {
-  // Check duplicate
+// ── Save to DB ────────────────────────────────────────────────────────────────
+async function classifyAndSave(url, collectionId, extraTags = []) {
   const existing = await pool.query('SELECT * FROM links WHERE url = $1', [url]);
   if (existing.rows.length > 0) return { ...existing.rows[0], duplicate: true };
 
@@ -94,15 +89,16 @@ async function classifyAndSave(url, collectionId) {
     tags = classification.tags || [];
     if (classification.category) tags.unshift(classification.category.toLowerCase());
   } catch {
-    // Groq failed — save with domain as name
     try { name = new URL(url).hostname.replace('www.', ''); } catch {}
   }
 
-  // Auto-add domain tag
+  // Merge: domain tag + AI tags + user-supplied tags
   try {
     const domain = new URL(url).hostname.replace('www.', '');
-    tags = [...new Set([domain, ...tags].filter(Boolean))];
-  } catch {}
+    tags = [...new Set([domain, ...tags, ...extraTags].filter(Boolean))];
+  } catch {
+    tags = [...new Set([...tags, ...extraTags].filter(Boolean))];
+  }
 
   const id = Date.now() + Math.floor(Math.random() * 1000);
   const result = await pool.query(
@@ -112,13 +108,13 @@ async function classifyAndSave(url, collectionId) {
   return result.rows[0];
 }
 
-// ── Listen for messages with URLs (auto-batch) ────────────────────────────────
-const WATCHED_CHANNEL_NAME = 'linvault'; // change to your channel name
+// ── Auto-listen for pasted URLs in #linvault ──────────────────────────────────
+const WATCHED_CHANNEL_NAME = 'linvault';
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
   if (message.channel.name !== WATCHED_CHANNEL_NAME) return;
-  if (message.content.startsWith('/')) return; // handled by slash commands
+  if (message.content.startsWith('/')) return;
 
   const urls = extractUrls(message.content);
   if (urls.length === 0) return;
@@ -126,47 +122,71 @@ client.on(Events.MessageCreate, async (message) => {
   if (!batchMap.has(message.channelId)) {
     batchMap.set(message.channelId, { urls: [], timer: null });
   }
-  const entry = batchMap.get(message.channelId);
-  entry.urls.push(...urls);
+  batchMap.get(message.channelId).urls.push(...urls);
   scheduleFlush(message.channelId, message.channel);
 });
 
-// ── Slash command: /save ──────────────────────────────────────────────────────
+// ── Slash command interactions ────────────────────────────────────────────────
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand() && !interaction.isAutocomplete()) return;
-
-  // Autocomplete for collection field
+  // ── Autocomplete ────────────────────────────────────────────────────────────
   if (interaction.isAutocomplete()) {
-    const focused = interaction.options.getFocused().toLowerCase();
-    try {
-      const result = await pool.query('SELECT id, name FROM collections ORDER BY name ASC');
-      const choices = result.rows
-        .filter(c => c.name.toLowerCase().includes(focused))
-        .slice(0, 25)
-        .map(c => ({ name: c.name, value: String(c.id) }));
-      await interaction.respond(choices);
-    } catch {
-      await interaction.respond([]);
+    const focused = interaction.options.getFocused(true);
+
+    if (focused.name === 'collection') {
+      const search = focused.value.toLowerCase();
+      try {
+        const result = await pool.query('SELECT id, name FROM collections ORDER BY name ASC');
+        const choices = result.rows
+          .filter(c => c.name.toLowerCase().includes(search))
+          .slice(0, 25)
+          .map(c => ({ name: c.name, value: String(c.id) }));
+        await interaction.respond(choices);
+      } catch { await interaction.respond([]); }
+    }
+
+    if (focused.name === 'tags') {
+      const search = focused.value.toLowerCase();
+      try {
+        // Pull all unique tags from existing links in DB
+        const result = await pool.query(`
+          SELECT DISTINCT unnest(tags) AS tag FROM links ORDER BY tag ASC
+        `);
+        const choices = result.rows
+          .map(r => r.tag)
+          .filter(t => t && t.toLowerCase().includes(search) && !t.includes('.'))
+          .slice(0, 25)
+          .map(t => ({ name: t, value: t }));
+        await interaction.respond(choices);
+      } catch { await interaction.respond([]); }
     }
     return;
   }
 
+  if (!interaction.isChatInputCommand()) return;
   if (interaction.commandName !== 'save') return;
 
   await interaction.deferReply();
 
-  const url = interaction.options.getString('url');
+  const rawUrl = interaction.options.getString('url');
   const collectionId = interaction.options.getString('collection') || null;
+  const tagInput = interaction.options.getString('tags') || '';
 
-  const urls = extractUrls(url);
+  const urls = extractUrls(rawUrl);
   if (urls.length === 0) {
-    return interaction.editReply('❌ No valid URL found.');
+    return interaction.editReply('❌ No valid URL found. Make sure it starts with https://');
   }
 
+  // Parse tags: comma or space separated, plus autocomplete pick
+  const extraTags = tagInput
+    .split(/[,\s]+/)
+    .map(t => t.trim().toLowerCase())
+    .filter(Boolean);
+
   try {
-    const link = await classifyAndSave(urls[0], collectionId);
+    const link = await classifyAndSave(urls[0], collectionId, extraTags);
+
     if (link.duplicate) {
-      return interaction.editReply(`⚠️ Already saved: **${link.name}**`);
+      return interaction.editReply(`⚠️ Already saved: **${link.name || link.url}**`);
     }
 
     let collectionName = 'Unsorted';
@@ -175,10 +195,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (col.rows.length > 0) collectionName = col.rows[0].name;
     }
 
-    interaction.editReply(`✅ Saved **${link.name}** to **${collectionName}**\nTags: ${link.tags?.join(', ') || 'none'}`);
+    const tagDisplay = link.tags?.filter(t => !t.includes('.')).join(', ') || 'none';
+    interaction.editReply(
+      `✅ Saved **${link.name}** to **${collectionName}**\n🏷️ Tags: ${tagDisplay}`
+    );
   } catch (err) {
     console.error(err);
-    interaction.editReply('❌ Failed to save link.');
+    interaction.editReply('❌ Failed to save link. Check server logs.');
   }
 });
 
