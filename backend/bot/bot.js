@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import pool from '../data/db.js';
+import { scheduleWeeklyDigest, scheduleMonthlyDigest } from './digest.js';
 
 const client = new Client({
   intents: [
@@ -208,6 +209,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
 // ── Ready ─────────────────────────────────────────────────────────────────────
 client.once(Events.ClientReady, (c) => {
   console.log(`✅ LinVault bot ready as ${c.user.tag}`);
+});
+client.once(Events.ClientReady, (c) => {
+  console.log(`✅ LinVault bot ready as ${c.user.tag}`);
+  scheduleWeeklyDigest(c);   // ← add this
+  scheduleMonthlyDigest(c);  // ← add this
 });
 
 client.login(process.env.DISCORD_TOKEN);

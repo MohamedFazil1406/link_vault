@@ -1,8 +1,14 @@
 // Run ONCE after any command changes:
 // node bot/registerCommands.js
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { REST, Routes, SlashCommandBuilder } from 'discord.js';
-import 'dotenv/config';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: resolve(__dirname, '../.env') });
 
 const commands = [
   new SlashCommandBuilder()
