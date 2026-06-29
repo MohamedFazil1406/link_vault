@@ -1,60 +1,108 @@
-# 🔒 Link Vault
+# 🔒 LinVault
 
-A full-stack link management app. Save URLs, organise them into collections, tag them automatically by domain, and search and filter across them — from the web app or directly from any page via the Chrome Extension.
+A full-stack link management app. Save URLs, organise them into collections, tag them automatically, search and filter across them — from the web app, Chrome Extension, Android share sheet, or directly from Discord.
 
 [![Repo](https://img.shields.io/badge/GitHub-link_vault-black?logo=github)](https://github.com/zeena-taste/link_vault)
 [![API](https://img.shields.io/badge/API-Render-blue?logo=render)](https://link-vault-p0sw.onrender.com)
 
 ---
 
+## What's New — Discord Bot (v2)
+
+LinVault now has a Discord bot for saving and managing links without opening the app.
+
+### Auto-save by pasting
+Drop any links into the `#linvault` channel — no command needed. The bot batches everything for 2 seconds, classifies each link using Groq AI, and saves them all to your vault automatically.
+
+### AI classification
+Every saved link gets a real name, category, tags, and a short summary in the notes field — powered by Groq (llama3). For YouTube links it fetches the real page title before classifying. For TikTok it uses the oEmbed API to get the actual video title.
+
+### Slash commands
+
+| Command | What it does |
+|---|---|
+| `/save <url>` | Save a link with optional collection and tags |
+| `/find <term>` | Search your vault by name, URL, notes, or tag |
+| `/recent` | Show your last 10 saved links |
+| `/random` | Pull a random link from your vault |
+| `/move <url> <collection>` | Move a link to a different collection |
+| `/tag <url> <tags>` | Add tags to an existing link |
+| `/unsave <url>` | Delete a link |
+| `/collection <name>` | Show all links in a collection |
+| `/stats` | Total links, collections, this week count, top tags |
+| `/duplicate` | Find and auto-delete duplicate URLs, keeps newest |
+| `/digest week` | AI summary of this week's links |
+| `/digest month` | AI summary of this month's links |
+| `/digest alltime` | AI summary of everything saved |
+| `/digest pick month:June year:2025` | AI summary of any specific month |
+
+### Automated digests
+The bot posts automatically to `#linvault` with no input needed:
+- **Every Monday at 9am** — weekly digest of links saved in the last 7 days
+- **1st of every month at 9am** — monthly digest with collection breakdown and AI summary
+
+Both run on Kigali time (UTC+2).
+
+---
+
 ## Features
 
-- Save links with a name, URL, and notes
-- Auto-tag links by domain on save (e.g. `github.com`, `youtube.com`)
-- Add custom tags manually and reuse existing ones across links
+- Save links with a name, URL, notes, and tags
+- Auto-tag links by domain on save
+- Add custom tags manually and reuse existing ones
 - Organise links into collections
-- Filter links by tag, domain, or date added (today / this week / this month)
+- Filter by tag, domain, or date added (today / this week / this month)
 - Search links by name
 - Export all links as JSON
+- Dark mode toggle — persists across sessions
 - Chrome Extension — save from any page without opening the app
+- Android share sheet — share any link directly into the app
+- Discord bot — save, search, and manage links without leaving Discord
 
 ---
 
 ## How the Code Works
 
 ### Frontend (`/frontend`)
-Built with React 19 and Vite. All state lives in `App.jsx` and flows down to components via props — no Redux or Context.
+Built with React 19 and Vite. All state lives in `App.jsx` and flows down via props.
 
-**`src/api.js`** — every fetch call to the backend lives here. Uses `import.meta.env.VITE_API_URL` so the backend URL is set via environment variable and never hardcoded.
+**`src/index.css`** — global design tokens as CSS variables. Dark mode is applied via `[data-theme="dark"]` on the `<html>` element and toggled from the sidebar. Theme preference is saved to `localStorage`.
 
-**`src/App.jsx`** — root component. Holds all state: links, collections, active filters, modal visibility, search term. All handlers live here and get passed down as props.
+**`src/api.js`** — every fetch call to the backend. Uses `import.meta.env.VITE_API_URL` so the backend URL is never hardcoded.
+
+**`src/App.jsx`** — root component. Holds all state: links, collections, active filters, modal visibility, search term, dark mode. All handlers live here and get passed down as props.
 
 **`src/components/`**
-- `Header.jsx` — search input and add link button
-- `sidebar.jsx` — navigation between home, collections, and export. Collapses to a bottom bar on mobile.
-- `linklist.jsx` — renders link cards. Hover to reveal notes on the left and tags on the right.
-- `FilterBar.jsx` — filter chips for date, domain, and custom tags. Only shows filters that have data.
-- `collectionPage.jsx` — shows all collections with real link counts
-- `addlinkbtn.jsx` — modal for adding or editing a link. Includes tag input with suggestions from existing tags, collection assignment, and notes.
+- `Header.jsx` — breadcrumb showing active collection, search input, filter toggle, add link button
+- `sidebar.jsx` — navigation with hover-expand behaviour, dark mode toggle, collapses to a bottom bar on mobile
+- `linklist.jsx` — link rows with favicon initial, inline tags, and action buttons that fade in on hover
+- `FilterBar.jsx` — animated filter chips for date, domain, and tags. Only shows filters that have data
+- `collectionPage.jsx` — card grid of collections with real link counts
+- `addlinkbtn.jsx` — modal for adding or editing a link. Tag autocomplete from existing tags, collection picker, notes
 - `addcollectionbtn.jsx` — modal for creating a new collection
+- `ShareTarget.jsx` — standalone bottom sheet rendered when opened via Android share sheet
 
 ### Backend (`/backend`)
-Node.js with Express 5 and ES Modules. Two route files handle all CRUD. Data is stored in PostgreSQL on Neon.
+Node.js with Express 5 and ES Modules.
 
-**`server.js`** — entry point. Sets up CORS (allows the frontend origin and any `chrome-extension://` origin), registers route files, starts on `process.env.PORT`.
+**`server.js`** — entry point. Imports the bot so it starts alongside the API server.
 
-**`routes/links.js`** — all `/links` endpoints. The `/unassigned` and `/collection/:id` routes are defined before `/:id` so Express doesn't match them as ID parameters. A `normalize()` helper converts PostgreSQL BIGINT columns to JS numbers before sending to the frontend. On POST, the domain is extracted from the URL using `new URL(url).hostname` and automatically added to the tags array alongside any custom tags.
+**`routes/links.js`** — all `/links` endpoints. Domain auto-tagged on POST. `normalize()` converts PostgreSQL BIGINT to JS numbers.
 
 **`routes/collections.js`** — all `/collections` endpoints.
 
-**`data/db.js`** — creates a `pg` connection pool using `process.env.DATABASE_URL`. All routes import the pool directly.
+**`data/db.js`** — `pg` connection pool from `process.env.DATABASE_URL`.
+
+### Discord Bot (`/backend/bot`)
+
+**`bot.js`** — main bot file. Handles the URL batching window, auto-paste listener, all slash command interactions, and autocomplete for collections and tags.
+
+**`digest.js`** — `generateDigest()` shared function used by both the `/digest` command and the scheduled cron jobs. Exports `scheduleWeeklyDigest` and `scheduleMonthlyDigest` which are started on bot ready.
+
+**`registerCommands.js`** — run once locally to register slash commands with Discord. Uses guild commands for instant registration.
 
 ### Chrome Extension (`/extension`)
 Manifest V3. Auto-fills the current tab's title and URL, loads collections from the backend, and POSTs the new link on save.
-
-**`manifest.json`** — declares `activeTab` permission and `host_permissions` for the backend URL. Without `host_permissions`, Manifest V3 silently blocks all fetch calls.
-
-**`popup.js`** — checks server is reachable on open, loads collections, handles save.
 
 ---
 
@@ -65,6 +113,8 @@ link_vault/
 ├── frontend/
 │   ├── src/
 │   │   ├── App.jsx
+│   │   ├── App.css
+│   │   ├── index.css
 │   │   ├── api.js
 │   │   ├── main.jsx
 │   │   └── components/
@@ -75,10 +125,9 @@ link_vault/
 │   │       ├── collectionPage.jsx
 │   │       ├── addlinkbtn.jsx
 │   │       ├── addcollectionbtn.jsx
+│   │       ├── ShareTarget.jsx
 │   │       └── CSS/
 │   ├── public/
-│   │   └── favicon.svg
-│   ├── index.html
 │   └── package.json
 │
 ├── backend/
@@ -88,6 +137,10 @@ link_vault/
 │   │   └── collections.js
 │   ├── data/
 │   │   └── db.js
+│   ├── bot/
+│   │   ├── bot.js
+│   │   ├── digest.js
+│   │   └── registerCommands.js
 │   └── package.json
 │
 └── extension/
@@ -105,10 +158,12 @@ link_vault/
 - Node.js v18+
 - A Chromium-based browser for the extension
 - A [Neon](https://neon.tech) free account for the database
+- A [Groq](https://console.groq.com) free account for AI classification
+- A Discord application and bot token from the [Discord Developer Portal](https://discord.com/developers/applications)
 
 ### 1. Database
 
-Create a free project on [neon.tech](https://neon.tech), then run this in the Neon SQL Editor:
+Create a free project on [neon.tech](https://neon.tech), then run:
 
 ```sql
 CREATE TABLE collections (
@@ -127,11 +182,6 @@ CREATE TABLE links (
 );
 ```
 
-Copy your connection string from Neon — it looks like:
-```
-postgresql://user:password@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require
-```
-
 ### 2. Backend
 
 ```bash
@@ -139,27 +189,37 @@ cd backend
 npm install
 ```
 
-Create a `.env` file in `backend/`:
+Create `backend/.env`:
 ```
 DATABASE_URL=your-neon-connection-string
 FRONTEND_URL=http://localhost:5173
 PORT=5000
+GROQ_API_KEY=your-groq-key
+DISCORD_TOKEN=your-bot-token
+DISCORD_CLIENT_ID=your-application-id
+DISCORD_GUILD_ID=your-discord-server-id
 ```
 
 ```bash
 node server.js
 ```
 
-Server runs on `http://localhost:5000`.
+### 3. Register Discord slash commands (once)
 
-### 3. Frontend
+```bash
+node bot/registerCommands.js
+```
+
+Commands appear in your server instantly (guild-scoped).
+
+### 4. Frontend
 
 ```bash
 cd frontend
 npm install
 ```
 
-Create a `.env` file in `frontend/`:
+Create `frontend/.env`:
 ```
 VITE_API_URL=http://localhost:5000
 ```
@@ -168,67 +228,73 @@ VITE_API_URL=http://localhost:5000
 npm run dev
 ```
 
-App runs on `http://localhost:5173`.
-
-### 4. Chrome Extension
+### 5. Chrome Extension
 
 1. Open `chrome://extensions`
 2. Enable **Developer Mode**
-3. Click **Load unpacked** → select the `extension/` folder
-
-Make sure the backend is running before using the extension.
+3. **Load unpacked** → select the `extension/` folder
 
 ---
 
 ## Environment Variables
 
-### Frontend (`frontend/.env`)
-| Variable | Value |
-|---|---|
-| `VITE_API_URL` | `http://localhost:5000` locally, your Render URL in production |
-
 ### Backend
 | Variable | Value |
 |---|---|
 | `DATABASE_URL` | Neon PostgreSQL connection string |
-| `FRONTEND_URL` | Your deployed frontend URL — used for CORS |
-| `PORT` | Set automatically by Render, falls back to 5000 locally |
+| `FRONTEND_URL` | Deployed frontend URL — used for CORS |
+| `PORT` | Set automatically by Render, falls back to 5000 |
+| `GROQ_API_KEY` | From [console.groq.com](https://console.groq.com) |
+| `DISCORD_TOKEN` | Bot token from Discord Developer Portal |
+| `DISCORD_CLIENT_ID` | Application ID from Discord Developer Portal |
+| `DISCORD_GUILD_ID` | Right-click your server in Discord → Copy Server ID |
+
+### Frontend
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | `http://localhost:5000` locally, Render URL in production |
 
 ---
 
 ## Deployment
 
 ### Database → Neon
-Free hosted PostgreSQL. Data persists independently of any server restarts or redeploys. Neon uses IPv4 which is required for Render's free tier.
+Free hosted PostgreSQL. Data persists independently of server restarts.
 
 ### Backend → Render
 1. Push to GitHub
-2. Render → New Web Service → connect repo → set Root Directory to `backend`
-3. Build command: `npm install` — Start command: `npm start`
-4. Add environment variables: `DATABASE_URL`, `FRONTEND_URL`
-5. Enable **Auto-Deploy** in Settings so pushes to main deploy automatically
+2. Render → New Web Service → connect repo → Root Directory: `backend`
+3. Build: `npm install` — Start: `npm start`
+4. Add all backend environment variables in the Render dashboard
+5. Enable **Auto-Deploy**
+
+The Discord bot starts automatically alongside the Express server.
 
 ### Frontend → Vercel
-1. Vercel → New Project → connect repo → set Root Directory to `frontend`
-2. Framework: Vite — Build command: `npm run build` — Output: `dist`
-3. Add environment variable: `VITE_API_URL` = your Render URL
+1. Vercel → New Project → Root Directory: `frontend`
+2. Framework: Vite — Build: `npm run build` — Output: `dist`
+3. Add `VITE_API_URL` = your Render URL
 4. Deploy
 
-> **Note:** Vite bakes environment variables at build time. If you update `VITE_API_URL` you must redeploy — a restart alone won't pick up the change.
+> Vite bakes env vars at build time. Updating `VITE_API_URL` requires a redeploy.
 
 ### Extension (production)
-Update `API_URL` at the top of `popup.js` to your Render URL, then reload the extension in `chrome://extensions`.
+Update `API_URL` in `popup.js` to your Render URL, then reload in `chrome://extensions`.
 
 ---
 
 ## Roadmap
 
-- [ ] Read later / reminders — flag links to revisit with optional remind date
-- [ ] Weekly stats — links added per week, most saved domain
-- [ ] Favicon fetching — auto-grab the site icon for each saved link
+- [ ] Read later / reminders — flag links with an optional remind date
+- [ ] Favicon fetching — auto-grab the site icon for each link
 - [ ] Link health checker — flag broken or redirected URLs
 - [ ] User authentication — multi-user support with Auth0 or Clerk
 - [ ] Full-text search — extend search to URLs and notes
+- [x] Discord bot — save and manage links from Discord
+- [x] AI classification — auto name, tag, and summarise every saved link
+- [x] Automated digests — weekly and monthly AI summaries posted to Discord
+- [x] Dark mode
+- [x] Android share sheet
 
 ---
 
