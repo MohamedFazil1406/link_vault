@@ -1,5 +1,14 @@
 import express from 'express';
 import pool from '../data/db.js';
+import {
+  ValidationError,
+  parseId,
+  requireNonEmptyString,
+  optionalString,
+  requireValidUrl,
+  optionalId,
+  optionalStringArray,
+} from '../utils/validate.js';
 
 const router = express.Router();
 
@@ -38,12 +47,14 @@ router.get('/unassigned', async (req, res) => {
 // GET links by collection — MUST be before /:id
 router.get('/collection/:id', async (req, res) => {
   try {
+    const collectionId = parseId(req.params.id, 'collection id');
     const result = await pool.query(
       'SELECT * FROM links WHERE collection_id = $1 ORDER BY id DESC',
-      [req.params.id]
+      [collectionId]
     );
     res.json(result.rows.map(normalize));
   } catch (err) {
+    if (err instanceof ValidationError) return res.status(400).json({ error: err.message });
     res.status(500).json({ error: "Failed to fetch links by collection" });
   }
 });
@@ -51,10 +62,12 @@ router.get('/collection/:id', async (req, res) => {
 // GET link by ID
 router.get('/:id', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM links WHERE id = $1', [req.params.id]);
+    const id = parseId(req.params.id);
+    const result = await pool.query('SELECT * FROM links WHERE id = $1', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Link not found' });
     res.json(normalize(result.rows[0]));
   } catch (err) {
+    if (err instanceof ValidationError) return res.status(400).json({ error: err.message });
     res.status(500).json({ error: "Failed to read link" });
   }
 });
@@ -62,7 +75,11 @@ router.get('/:id', async (req, res) => {
 // POST add new link
 router.post('/', async (req, res) => {
   try {
-    const { name, url, notes = '', collectionId = null, tags = [] } = req.body;
+    const name = requireNonEmptyString(req.body.name, 'name');
+    const url = requireValidUrl(req.body.url, 'url');
+    const notes = optionalString(req.body.notes, 'notes');
+    const collectionId = optionalId(req.body.collectionId, 'collectionId');
+    const tags = optionalStringArray(req.body.tags, 'tags');
 
     // check for duplicate URL
     const existing = await pool.query('SELECT * FROM links WHERE url = $1', [url]);
@@ -85,6 +102,7 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json(normalize(result.rows[0]));
   } catch (err) {
+    if (err instanceof ValidationError) return res.status(400).json({ error: err.message });
     console.error(err);
     res.status(500).json({ error: "Failed to add link" });
   }
@@ -93,10 +111,28 @@ router.post('/', async (req, res) => {
 // PUT update link
 router.put('/:id', async (req, res) => {
   try {
-    const { name, url, notes, collectionId, tags } = req.body;
+    const id = parseId(req.params.id);
 
-    // if url is being updated, recalculate domain tag
-    let updatedTags = tags ?? null;
+    // Every field here is optional on update — but if present, it must be
+    // valid. COALESCE in the query keeps whatever wasn't sent unchanged.
+    const name = req.body.name !== undefined
+      ? requireNonEmptyString(req.body.name, 'name')
+      : null;
+    const url = req.body.url !== undefined
+      ? requireValidUrl(req.body.url, 'url')
+      : null;
+    const notes = req.body.notes !== undefined
+      ? optionalString(req.body.notes, 'notes')
+      : null;
+    const collectionId = req.body.collectionId !== undefined
+      ? optionalId(req.body.collectionId, 'collectionId')
+      : null;
+    const tags = req.body.tags !== undefined
+      ? optionalStringArray(req.body.tags, 'tags')
+      : null;
+
+    // if url is being updated alongside tags, recalculate domain tag
+    let updatedTags = tags;
     if (url && tags) {
       let domain = '';
       try { domain = new URL(url).hostname.replace('www.', ''); } catch { domain = ''; }
@@ -111,11 +147,12 @@ router.put('/:id', async (req, res) => {
         collection_id = COALESCE($4, collection_id),
         tags = COALESCE($5, tags)
        WHERE id = $6 RETURNING *`,
-      [name, url, notes, collectionId, updatedTags, req.params.id]
+      [name, url, notes, collectionId, updatedTags, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: "Link not found" });
     res.json(normalize(result.rows[0]));
   } catch (err) {
+    if (err instanceof ValidationError) return res.status(400).json({ error: err.message });
     res.status(500).json({ error: "Failed to update link" });
   }
 });
@@ -123,10 +160,12 @@ router.put('/:id', async (req, res) => {
 // DELETE link
 router.delete('/:id', async (req, res) => {
   try {
-    const result = await pool.query('DELETE FROM links WHERE id = $1 RETURNING *', [req.params.id]);
+    const id = parseId(req.params.id);
+    const result = await pool.query('DELETE FROM links WHERE id = $1 RETURNING *', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: "Link not found" });
     res.json(normalize(result.rows[0]));
   } catch (err) {
+    if (err instanceof ValidationError) return res.status(400).json({ error: err.message });
     res.status(500).json({ error: "Failed to delete link" });
   }
 });
