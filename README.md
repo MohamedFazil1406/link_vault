@@ -4,6 +4,8 @@ A full-stack link management app. Save URLs, organise them into collections, tag
 
 [![Repo](https://img.shields.io/badge/GitHub-link_vault-black?logo=github)](https://github.com/zeena-taste/link_vault)
 [![API](https://img.shields.io/badge/API-Render-blue?logo=render)](https://link-vault-p0sw.onrender.com)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](./LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
 ---
 
@@ -300,4 +302,18 @@ Update `API_URL` in `popup.js` to your Render URL, then reload in `chrome://exte
 
 ## Contributing
 
-Contributions are welcome. Fork the repo, create a branch, and open a pull request.
+Contributions are welcome — bug fixes, new features, docs, anything.
+
+1. Fork the repo and create a branch off `main`
+2. Follow the local setup steps above to get the frontend, backend, and/or extension running
+3. Make your change and open a pull request
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide (project structure, local setup notes, commit style, and what to include in a PR), and please follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
+
+Not sure where to start? Check the [Roadmap](#roadmap) above or browse [open issues](https://github.com/zeena-taste/link_vault/issues) — issues labeled `good first issue` are a good place to begin.
+
+---
+
+## License
+
+Licensed under the [ISC License](./LICENSE).
