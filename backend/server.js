@@ -1,10 +1,21 @@
+import 'dotenv/config';  // Load environment variables from .env file
 import express from 'express';
 import cors from 'cors';
 import collectionRoute from './routes/collections.js';
 import linkRoute from './routes/links.js';
 import './bot/bot.js';
+import {readLimiter,writeLimiter} from './middleware/rateLimiter.js';
 
 const app = express();
+
+function methodBasedRateLimiter(req, res, next) {
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return readLimiter(req, res, next);
+    
+  }
+  
+    return writeLimiter(req, res, next);
+}
 
 // Allowed origins: local dev + your future Vercel frontend URL
 const allowedOrigins = [
@@ -22,6 +33,8 @@ app.use(cors({
     }
   }
 }));
+
+app.use(methodBasedRateLimiter);  // Apply rate limiting middleware to all routes
 
 app.use(express.json());
 app.use('/collections', collectionRoute);
