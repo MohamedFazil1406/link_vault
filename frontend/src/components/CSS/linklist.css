@@ -104,6 +104,8 @@
 .lv-action-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
 .lv-action-btn.edit:hover  { background: #dbeafe; color: #2563eb; }
 .lv-action-btn.del:hover   { background: #fee2e2; color: #ef4444; }
+.lv-action-btn.copy:hover  { background: #dcfce7; color: #16a34a; }
+.lv-action-btn.copy.copied { background: #dcfce7; color: #16a34a; }
 
 /* Notes row (hover) */
 .lv-link-notes {
