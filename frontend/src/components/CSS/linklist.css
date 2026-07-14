@@ -12,7 +12,10 @@
   border-radius: var(--radius-md);
   background: var(--bg);
   border: 1px solid transparent;
-  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  transition:
+    border-color var(--transition),
+    background var(--transition),
+    box-shadow var(--transition);
   cursor: default;
 }
 
@@ -57,7 +60,9 @@
   white-space: nowrap;
   transition: color var(--transition);
 }
-.lv-link-name:hover { color: var(--amber); }
+.lv-link-name:hover {
+  color: var(--amber);
+}
 
 /* Tags inline (always visible) */
 .lv-link-tags {
@@ -85,7 +90,9 @@
   transition: opacity var(--transition);
   flex-shrink: 0;
 }
-.lv-link:hover .lv-link-actions { opacity: 1; }
+.lv-link:hover .lv-link-actions {
+  opacity: 1;
+}
 
 .lv-action-btn {
   width: 28px;
@@ -101,11 +108,29 @@
   transition: all var(--transition);
 }
 
+<<<<<<< HEAD
 .lv-action-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
 .lv-action-btn.edit:hover  { background: #dbeafe; color: #2563eb; }
 .lv-action-btn.del:hover   { background: #fee2e2; color: #ef4444; }
 .lv-action-btn.copy:hover  { background: #dcfce7; color: #16a34a; }
 .lv-action-btn.copy.copied { background: #dcfce7; color: #16a34a; }
+=======
+.lv-action-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+.lv-action-btn.edit:hover {
+  background: #dbeafe;
+  color: #2563eb;
+}
+.lv-action-btn.del:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+>>>>>>> 9cc936f (feat: add scheduled link health checker)
 
 /* Notes row (hover) */
 .lv-link-notes {
@@ -116,7 +141,9 @@
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.2s ease, opacity 0.2s ease;
+  transition:
+    max-height 0.2s ease,
+    opacity 0.2s ease;
 }
 .lv-link:hover .lv-link-notes,
 .lv-link:focus-within .lv-link-notes {
@@ -135,6 +162,25 @@
   gap: 12px;
 }
 
+.lv-link-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lv-link-status {
+  font-size: 14px;
+  cursor: help;
+}
+
+.lv-link-status.broken {
+  color: #dc2626;
+}
+
+.lv-link-status.redirected {
+  color: #f59e0b;
+}
+
 .lv-empty-icon {
   width: 52px;
   height: 52px;
@@ -144,12 +190,30 @@
   align-items: center;
   justify-content: center;
 }
-.lv-empty-icon svg { width: 24px; height: 24px; stroke: var(--amber); fill: none; stroke-width: 1.8; }
+.lv-empty-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--amber);
+  fill: none;
+  stroke-width: 1.8;
+}
 
-.lv-empty h3 { font-size: 1rem; font-weight: 600; color: var(--text-2); }
-.lv-empty p  { font-size: 0.83rem; color: var(--text-4); max-width: 260px; }
+.lv-empty h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.lv-empty p {
+  font-size: 0.83rem;
+  color: var(--text-4);
+  max-width: 260px;
+}
 
 @media (max-width: 768px) {
-  .lv-link-tags { display: none; }
-  .lv-link-actions { opacity: 1; }
+  .lv-link-tags {
+    display: none;
+  }
+  .lv-link-actions {
+    opacity: 1;
+  }
 }
