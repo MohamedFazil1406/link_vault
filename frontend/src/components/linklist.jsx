@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import './CSS/linklist.css';
-
-function getFavicon(url) {
-  try { return new URL(url).hostname.replace('www.', '')[0].toUpperCase(); }
-  catch { return '?'; }
-}
+import Favicon from './Favicon.jsx';
 
 function CopyButton({ url }) {
   const [copied, setCopied] = useState(false);
@@ -62,7 +58,7 @@ export default function Linklist({ links, onEditLink, onDeleteLink }) {
         return (
           <div key={link.id} className="lv-link">
             <div className="lv-link-top">
-              <div className="lv-favicon">{getFavicon(link.url)}</div>
+              <Favicon url={link.url} />
 
               <a href={link.url} target="_blank" rel="noreferrer" className="lv-link-name">
                 {link.name}
