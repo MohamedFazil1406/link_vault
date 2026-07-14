@@ -1,12 +1,10 @@
-<<<<<<< HEAD
-import 'dotenv/config';  // Load environment variables from .env file
-import express from 'express';
-import cors from 'cors';
-import collectionRoute from './routes/collections.js';
-import linkRoute from './routes/links.js';
-import './bot/bot.js';
-import {readLimiter,writeLimiter} from './middleware/rateLimiter.js';
-=======
+import "dotenv/config"; // Load environment variables from .env file
+import express from "express";
+import cors from "cors";
+import collectionRoute from "./routes/collections.js";
+import linkRoute from "./routes/links.js";
+import "./bot/bot.js";
+import { readLimiter, writeLimiter } from "./middleware/rateLimiter.js";
 import "dotenv/config"; // Load environment variables from .env file
 import express from "express";
 import cors from "cors";
@@ -14,18 +12,20 @@ import collectionRoute from "./routes/collections.js";
 import linkRoute from "./routes/links.js";
 import { scheduleLinkHealthCheck } from "./bot/linkHealth.js";
 import "./bot/bot.js";
->>>>>>> 9cc936f (feat: add scheduled link health checker)
 
 const app = express();
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 function methodBasedRateLimiter(req, res, next) {
-  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+  if (
+    req.method === "GET" ||
+    req.method === "HEAD" ||
+    req.method === "OPTIONS"
+  ) {
     return readLimiter(req, res, next);
-
   }
 
-    return writeLimiter(req, res, next);
+  return writeLimiter(req, res, next);
 }
 
 // Allowed origins: local dev + your future Vercel frontend URL
@@ -51,7 +51,7 @@ app.use(
   }),
 );
 
-app.use(methodBasedRateLimiter);  // Apply rate limiting middleware to all routes
+app.use(methodBasedRateLimiter); // Apply rate limiting middleware to all routes
 
 app.use(express.json());
 app.use("/collections", collectionRoute);
@@ -64,10 +64,7 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 5000; // Render sets PORT automatically
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-<<<<<<< HEAD
+  cheduleLinkHealthCheck();
 });
-=======
 
-  scheduleLinkHealthCheck();
-});
->>>>>>> 9cc936f (feat: add scheduled link health checker)
+s;

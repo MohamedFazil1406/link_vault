@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 import { useState } from 'react';
 import './CSS/linklist.css';
-=======
 import "./CSS/linklist.css";
->>>>>>> 9cc936f (feat: add scheduled link health checker)
 
 function getFavicon(url) {
   try {
@@ -129,11 +126,9 @@ export default function Linklist({ links, onEditLink, onDeleteLink }) {
               )}
 
               <div className="lv-link-actions">
-<<<<<<< HEAD
                 <CopyButton url={link.url} />
                 <button className="lv-action-btn edit" onClick={() => onEditLink(link)} title="Edit">
                   <svg viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-=======
                 <button
                   className="lv-action-btn edit"
                   onClick={() => onEditLink(link)}
@@ -146,7 +141,6 @@ export default function Linklist({ links, onEditLink, onDeleteLink }) {
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                     />
                   </svg>
->>>>>>> 9cc936f (feat: add scheduled link health checker)
                 </button>
 
                 <button
