@@ -1,9 +1,11 @@
 import './CSS/header.css';
+import SortDropdown from './SortDropdown.jsx';
 
 export default function Header({
   onAddLink, searchTerm, onSearchChange,
   showFilters, onToggleFilters, showFilterBtn,
-  activeCollectionId, collections, onGoHome
+  activeCollectionId, collections, onGoHome,
+  sortBy, onSortChange, showSortBtn
 }) {
   const activeCol = collections?.find(c => c.id === activeCollectionId);
 
@@ -35,6 +37,11 @@ export default function Header({
           onChange={e => onSearchChange(e.target.value)}
         />
       </div>
+
+      {/* Sort */}
+      {showSortBtn && (
+        <SortDropdown sortBy={sortBy} onSortChange={onSortChange} />
+      )}
 
       {/* Filter toggle */}
       {showFilterBtn && (
