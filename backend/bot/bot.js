@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import pool from '../data/db.js';
 import { scheduleWeeklyDigest, scheduleMonthlyDigest, generateDigest } from './digest.js';
+import "dotenv/config";
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
