@@ -7,13 +7,14 @@ import './bot/bot.js';
 import {readLimiter,writeLimiter} from './middleware/rateLimiter.js';
 
 const app = express();
+app.set('trust proxy', 1);
 
 function methodBasedRateLimiter(req, res, next) {
-  if (req.method === 'GET' || req.method === 'HEAD') {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
     return readLimiter(req, res, next);
-    
+
   }
-  
+
     return writeLimiter(req, res, next);
 }
 
