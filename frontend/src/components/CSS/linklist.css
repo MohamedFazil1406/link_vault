@@ -29,8 +29,6 @@
   gap: 10px;
 }
 
-/* Favicon styles moved to favicon.css */
-
 .lv-link-name {
   flex: 1;
   min-width: 0;
@@ -140,9 +138,7 @@
   .lv-link-actions { opacity: 1; }
 }
 
-/* Add this to the bottom of your existing linklist.css */
-
-/* ── Checkbox ── */
+/* ── Checkbox & Selected State (MERGED) ── */
 .lv-checkbox {
   width: 16px;
   height: 16px;
@@ -152,17 +148,22 @@
   cursor: pointer;
   accent-color: var(--amber);
   flex-shrink: 0;
-  margin-right: 4px;
+  transition: all var(--transition); /* Kept from PR-21 */
+  margin-right: 4px;                 /* Kept from main */
 }
+
 .lv-checkbox:hover {
   border-color: var(--amber);
 }
 
-/* ── Selected State ── */
 .lv-link.selected {
   background: var(--amber-soft);
   border-color: var(--amber);
 }
+
+/* Note: If you are using the new <Favicon /> component, 
+   ensure its own CSS file handles the selected state, 
+   or add this fallback if it still uses the .lv-favicon class: */
 .lv-link.selected .lv-favicon {
   background: var(--amber);
   color: #fff;

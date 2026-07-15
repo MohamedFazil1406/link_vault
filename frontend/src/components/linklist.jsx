@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import './CSS/linklist.css';
-
-// Assuming you have a Favicon component now, as shown in your HEAD branch
-import Favicon from './Favicon.jsx'; // <-- Make sure this import exists if you created it!
+import Favicon from './Favicon.jsx'; // Keep the upgraded component from main
 
 function CopyButton({ url }) {
   const [copied, setCopied] = useState(false);
@@ -24,11 +22,7 @@ function CopyButton({ url }) {
   };
 
   return (
-    <button
-      className={`lv-action-btn copy${copied ? ' copied' : ''}`}
-      onClick={handleCopy}
-      title={copied ? 'Copied!' : 'Copy URL'}
-    >
+    <button className={`lv-action-btn copy${copied ? ' copied' : ''}`} onClick={handleCopy} title={copied ? 'Copied!' : 'Copy URL'}>
       {copied ? (
         <svg viewBox="0 0 24 24"> <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/> </svg>
       ) : (
@@ -62,7 +56,7 @@ export default function Linklist({ links, onEditLink, onDeleteLink, selectedIds,
           <div key={link.id} className={`lv-link ${isSelected ? 'selected' : ''}`}>
             <div className="lv-link-top">
               
-              {/* --- NEW: Checkbox for bulk selection --- */}
+              {/* --- MERGED: Checkbox from PR-21 --- */}
               <input 
                 type="checkbox" 
                 className="lv-checkbox"
@@ -72,7 +66,7 @@ export default function Linklist({ links, onEditLink, onDeleteLink, selectedIds,
                 aria-label={`Select ${link.name}`}
               />
               
-              {/* --- KEPT: Your updated Favicon component from HEAD --- */}
+              {/* --- MERGED: Upgraded Favicon component from main --- */}
               <Favicon url={link.url} />
               
               <a href={link.url} target="_blank" rel="noreferrer" className="lv-link-name">

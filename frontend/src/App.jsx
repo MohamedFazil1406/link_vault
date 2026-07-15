@@ -9,9 +9,12 @@ import AddLinkModal from './components/addlinkbtn.jsx';
 import AddCollectionModal from './components/addcollectionbtn.jsx';
 import ShareTarget from './components/ShareTarget.jsx';
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // --- MERGED IMPORTS: Keep both Skeleton and Bulk components ---
 import LoadingSkeleton from './components/Skeleton.jsx';
+=======
+>>>>>>> pr-21
 =======
 >>>>>>> pr-21
 import BulkTagModal from './components/BulkTagModal.jsx';
@@ -21,7 +24,11 @@ import {
   getAllLinks, addLink, deleteLink, updateLink,
   getAllCollections, addCollection, deleteCollection,
 <<<<<<< HEAD
+<<<<<<< HEAD
   bulkDeleteLinks, bulkArchiveLinks, bulkTagLinks // Bulk API functions
+=======
+  bulkDeleteLinks, bulkArchiveLinks, bulkTagLinks // <-- ADD THIS
+>>>>>>> pr-21
 =======
   bulkDeleteLinks, bulkArchiveLinks, bulkTagLinks // <-- ADD THIS
 >>>>>>> pr-21
@@ -48,10 +55,14 @@ export default function App() {
   const [showFilters, setShowFilters] = useState(false);
   
 <<<<<<< HEAD
+<<<<<<< HEAD
   // Sorting (from HEAD)
   const [sortBy, setSortBy] = useState('newest');
 
   // Bulk Selection State (from PR-21)
+=======
+  // Bulk Selection State
+>>>>>>> pr-21
 =======
   // Bulk Selection State
 >>>>>>> pr-21
@@ -72,6 +83,11 @@ export default function App() {
       } catch (e) {
         console.error("API Fetch Error:", e);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+        // NOTE: If you see the "<!doctype" error, it means your backend is returning 
+        // an HTML error page (like 404/500) instead of JSON. Check your backend server!
+>>>>>>> pr-21
 =======
         // NOTE: If you see the "<!doctype" error, it means your backend is returning 
         // an HTML error page (like 404/500) instead of JSON. Check your backend server!
@@ -174,7 +190,11 @@ export default function App() {
   };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   // --- Bulk Action Handlers ---
+=======
+    // --- Bulk Action Handlers ---
+>>>>>>> pr-21
 =======
     // --- Bulk Action Handlers ---
 >>>>>>> pr-21
@@ -190,6 +210,10 @@ export default function App() {
   const clearSelection = () => setSelectedIds(new Set());
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  // bulk delete
+>>>>>>> pr-21
 =======
   // bulk delete
 >>>>>>> pr-21
@@ -199,6 +223,11 @@ export default function App() {
       const idsArray = Array.from(selectedIds);
       await bulkDeleteLinks(idsArray);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      
+      // Update local state instantly
+>>>>>>> pr-21
 =======
       
       // Update local state instantly
@@ -212,6 +241,10 @@ export default function App() {
   };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  // bulk archive
+>>>>>>> pr-21
 =======
   // bulk archive
 >>>>>>> pr-21
@@ -220,6 +253,11 @@ export default function App() {
       const idsArray = Array.from(selectedIds);
       await bulkArchiveLinks(idsArray, true);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      
+      // Update local state instantly
+>>>>>>> pr-21
 =======
       
       // Update local state instantly
@@ -234,6 +272,10 @@ export default function App() {
   };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  // bulk tag apply
+>>>>>>> pr-21
 =======
   // bulk tag apply
 >>>>>>> pr-21
@@ -242,6 +284,11 @@ export default function App() {
       const idsArray = Array.from(selectedIds);
       await bulkTagLinks(idsArray, tag);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      
+      // Update local state instantly (add tag to existing tags, avoid duplicates)
+>>>>>>> pr-21
 =======
       
       // Update local state instantly (add tag to existing tags, avoid duplicates)
@@ -285,10 +332,13 @@ export default function App() {
           collections={collections}
           onGoHome={goHome}
 <<<<<<< HEAD
+<<<<<<< HEAD
           // --- MERGED: Keep sorting props from HEAD ---
           sortBy={sortBy}
           onSortChange={setSortBy}
           showSortBtn={view === "home"}
+=======
+>>>>>>> pr-21
 =======
 >>>>>>> pr-21
         /> 
@@ -296,7 +346,11 @@ export default function App() {
         {view === "home" && showFilters && (
           <FilterBar 
 <<<<<<< HEAD
+<<<<<<< HEAD
             links={links}
+=======
+            links={links} /* <-- THIS FIXES THE flatMap ERROR */
+>>>>>>> pr-21
 =======
             links={links} /* <-- THIS FIXES THE flatMap ERROR */
 >>>>>>> pr-21
@@ -310,6 +364,7 @@ export default function App() {
           />
         )}
 
+<<<<<<< HEAD
 <<<<<<< HEAD
         {/* --- MERGED: Use LoadingSkeleton from HEAD, but add bulk props from PR-21 --- */}
         <div className="lv-content">
@@ -333,6 +388,8 @@ export default function App() {
           )}
         </div>
 =======
+=======
+>>>>>>> pr-21
         {loading ? (
           <div className="lv-empty"><p>Loading...</p></div>
         ) : view === "home" ? (
@@ -350,6 +407,9 @@ export default function App() {
             onDeleteCollection={deleteCollection_}
           />
         )}
+<<<<<<< HEAD
+>>>>>>> pr-21
+=======
 >>>>>>> pr-21
       </div>
 
@@ -371,7 +431,10 @@ export default function App() {
       )}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       {/* --- Bulk Actions UI --- */}
+=======
+>>>>>>> pr-21
 =======
 >>>>>>> pr-21
       <BulkActionsBar
