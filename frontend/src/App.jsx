@@ -8,6 +8,7 @@ import CollectionsPage from './components/collectionPage.jsx';
 import AddLinkModal from './components/addlinkbtn.jsx';
 import AddCollectionModal from './components/addcollectionbtn.jsx';
 import ShareTarget from './components/ShareTarget.jsx';
+import LoadingSkeleton from './components/Skeleton.jsx';
 import {
   getAllLinks, addLink, deleteLink, updateLink,
   getAllCollections, addCollection, deleteCollection,
@@ -157,7 +158,7 @@ export default function App() {
 
         <div className="lv-content">
           {loading ? (
-            <div className="lv-loading"><div className="lv-spinner" /></div>
+            <LoadingSkeleton />
           ) : view === "home" ? (
             <Linklist
               links={filteredLinks}
