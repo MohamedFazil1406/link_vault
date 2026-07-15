@@ -1,12 +1,21 @@
-/* ── Layout shell ─────────────────────────────────────────── */
-.lv-app {
+/* Lock the viewport to prevent body scroll */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; 
+}
+
+/* ── Layout shell ── */
+.app-container {
   display: flex;
   height: 100vh;
+  width: 100vw;
   overflow: hidden;
   background: var(--bg);
 }
 
-.lv-main {
+.main-content {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -17,7 +26,7 @@
 .lv-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px 32px;
+  padding: 20px;
 }
 
 /* ── Loading ──────────────────────────────────────────────── */
@@ -43,4 +52,114 @@
 @media (max-width: 768px) {
   .lv-app { flex-direction: column; }
   .lv-content { padding: 16px 16px 90px; }
+}
+
+/* ── Bulk Actions Bar ─ */
+.bulk-actions-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.bulk-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.bulk-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--amber);
+}
+
+.bulk-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+}
+
+.bulk-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.bulk-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: all var(--transition);
+}
+
+.bulk-btn:hover {
+  background: var(--bg-2);
+  color: var(--text-1);
+}
+
+.bulk-btn-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Danger button (Delete) hover state */
+.bulk-btn-danger:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+[data-theme="dark"] .bulk-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.bulk-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-3);
+  transition: all var(--transition);
+}
+
+.bulk-close-btn:hover {
+  background: var(--bg-2);
+  color: var(--text-1);
+}
+
+.bulk-close-icon {
+  width: 16px;
+  height: 16px;
 }

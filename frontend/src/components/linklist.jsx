@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './CSS/linklist.css';
-import Favicon from './Favicon.jsx'; // Keep the upgraded component from main
+import Favicon from './Favicon.jsx'; // ✅ Import the real Favicon component
 
 function CopyButton({ url }) {
   const [copied, setCopied] = useState(false);
@@ -48,15 +48,12 @@ export default function Linklist({ links, onEditLink, onDeleteLink, selectedIds,
   return (
     <div className="lv-list">
       {links.map(link => {
-        // --- MERGED: Selection logic from PR-21 ---
         const isSelected = selectedIds?.has(link.id) || false;
         const displayTags = (link.tags || []).filter(t => !t.includes('.'));
 
         return (
           <div key={link.id} className={`lv-link ${isSelected ? 'selected' : ''}`}>
             <div className="lv-link-top">
-              
-              {/* --- MERGED: Checkbox from PR-21 --- */}
               <input 
                 type="checkbox" 
                 className="lv-checkbox"
@@ -66,13 +63,12 @@ export default function Linklist({ links, onEditLink, onDeleteLink, selectedIds,
                 aria-label={`Select ${link.name}`}
               />
               
-              {/* --- MERGED: Upgraded Favicon component from main --- */}
+              {/* ✅ Use the Favicon component here! */}
               <Favicon url={link.url} />
               
               <a href={link.url} target="_blank" rel="noreferrer" className="lv-link-name">
                 {link.name}
               </a>
-              
               {displayTags.length > 0 && (
                 <div className="lv-link-tags">
                   {displayTags.slice(0, 3).map(t => (
@@ -80,7 +76,6 @@ export default function Linklist({ links, onEditLink, onDeleteLink, selectedIds,
                   ))}
                 </div>
               )}
-              
               <div className="lv-link-actions">
                 <CopyButton url={link.url} />
                 <button className="lv-action-btn edit" onClick={() => onEditLink(link)} title="Edit">
@@ -91,7 +86,6 @@ export default function Linklist({ links, onEditLink, onDeleteLink, selectedIds,
                 </button>
               </div>
             </div>
-            
             {link.notes && (
               <div className="lv-link-notes">{link.notes}</div>
             )}

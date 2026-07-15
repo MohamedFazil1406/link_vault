@@ -29,6 +29,59 @@
   gap: 10px;
 }
 
+/* ── Checkbox (hidden by default) ── */
+.lv-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-2);
+  cursor: pointer;
+  accent-color: var(--amber);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+  visibility: hidden;
+  position: absolute;
+}
+
+/* Show checkbox on hover */
+.lv-link:hover .lv-checkbox {
+  opacity: 1;
+  visibility: visible;
+  position: static;
+}
+
+/* Keep visible when checked */
+.lv-checkbox:checked {
+  opacity: 1;
+  visibility: visible;
+  position: static;
+  border-color: var(--amber);
+}
+
+/* Selected state */
+.lv-link.selected {
+  background: var(--amber-soft);
+  border-color: var(--amber);
+}
+
+/* Favicon dot */
+.lv-favicon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--amber-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+
 .lv-link-name {
   flex: 1;
   min-width: 0;
@@ -41,7 +94,10 @@
   white-space: nowrap;
   transition: color var(--transition);
 }
-.lv-link-name:hover { color: var(--amber); }
+
+.lv-link-name:hover {
+  color: var(--amber);
+}
 
 /* Tags inline (always visible) */
 .lv-link-tags {
@@ -69,7 +125,10 @@
   transition: opacity var(--transition);
   flex-shrink: 0;
 }
-.lv-link:hover .lv-link-actions { opacity: 1; }
+
+.lv-link:hover .lv-link-actions {
+  opacity: 1;
+}
 
 .lv-action-btn {
   width: 28px;
@@ -85,11 +144,33 @@
   transition: all var(--transition);
 }
 
-.lv-action-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
-.lv-action-btn.edit:hover  { background: #dbeafe; color: #2563eb; }
-.lv-action-btn.del:hover   { background: #fee2e2; color: #ef4444; }
-.lv-action-btn.copy:hover  { background: #dcfce7; color: #16a34a; }
-.lv-action-btn.copy.copied { background: #dcfce7; color: #16a34a; }
+.lv-action-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.lv-action-btn.edit:hover {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.lv-action-btn.del:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.lv-action-btn.copy:hover {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.lv-action-btn.copy.copied {
+  background: #dcfce7;
+  color: #16a34a;
+}
 
 /* Notes row (hover) */
 .lv-link-notes {
@@ -102,6 +183,7 @@
   opacity: 0;
   transition: max-height 0.2s ease, opacity 0.2s ease;
 }
+
 .lv-link:hover .lv-link-notes,
 .lv-link:focus-within .lv-link-notes {
   max-height: 48px;
@@ -128,43 +210,48 @@
   align-items: center;
   justify-content: center;
 }
-.lv-empty-icon svg { width: 24px; height: 24px; stroke: var(--amber); fill: none; stroke-width: 1.8; }
 
-.lv-empty h3 { font-size: 1rem; font-weight: 600; color: var(--text-2); }
-.lv-empty p  { font-size: 0.83rem; color: var(--text-4); max-width: 260px; }
+.lv-empty-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--amber);
+  fill: none;
+  stroke-width: 1.8;
+}
+
+.lv-empty h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.lv-empty p {
+  font-size: 0.83rem;
+  color: var(--text-4);
+  max-width: 260px;
+}
 
 @media (max-width: 768px) {
-  .lv-link-tags { display: none; }
-  .lv-link-actions { opacity: 1; }
+  .lv-link-tags {
+    display: none;
+  }
+  .lv-link-actions {
+    opacity: 1;
+  }
 }
 
-/* ── Checkbox & Selected State (MERGED) ── */
-.lv-checkbox {
+/* Ensure the image inside the Favicon component fits */
+.lv-favicon-img {
   width: 16px;
   height: 16px;
-  border-radius: 4px;
-  border: 1.5px solid var(--border);
-  background: var(--bg-2);
-  cursor: pointer;
-  accent-color: var(--amber);
-  flex-shrink: 0;
-  transition: all var(--transition); /* Kept from PR-21 */
-  margin-right: 4px;                 /* Kept from main */
+  object-fit: contain;
 }
 
-.lv-checkbox:hover {
-  border-color: var(--amber);
-}
-
-.lv-link.selected {
-  background: var(--amber-soft);
-  border-color: var(--amber);
-}
-
-/* Note: If you are using the new <Favicon /> component, 
-   ensure its own CSS file handles the selected state, 
-   or add this fallback if it still uses the .lv-favicon class: */
-.lv-link.selected .lv-favicon {
-  background: var(--amber);
-  color: #fff;
+/* Fallback letter styling */
+.lv-favicon-letter {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
