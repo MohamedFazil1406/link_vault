@@ -1,4 +1,4 @@
-import { Trash2, Tag, Archive, X, CheckSquare } from "lucide-react";
+import { Trash2, Tag, Archive, X, CheckSquare, RotateCcw } from "lucide-react";
 
 export function BulkActionsBar({
   selectedCount,
@@ -6,6 +6,7 @@ export function BulkActionsBar({
   onTag,
   onArchive,
   onClearSelection,
+  isArchived = false,
 }) {
   if (selectedCount === 0) return null;
 
@@ -23,10 +24,12 @@ export function BulkActionsBar({
           <Tag className="bulk-btn-icon" />
           <span>Tag</span>
         </button>
-        <button onClick={onArchive} className="bulk-btn" title="Archive selected">
-          <Archive className="bulk-btn-icon" />
-          <span>Archive</span>
+        
+        <button onClick={onArchive} className="bulk-btn" title={isArchived ? "Restore selected" : "Archive selected"}>
+          {isArchived ? <RotateCcw className="bulk-btn-icon" /> : <Archive className="bulk-btn-icon" />}
+          <span>{isArchived ? "Restore" : "Archive"}</span>
         </button>
+        
         <button onClick={onDelete} className="bulk-btn bulk-btn-danger" title="Delete selected">
           <Trash2 className="bulk-btn-icon" />
           <span>Delete</span>
