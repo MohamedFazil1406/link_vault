@@ -1,0 +1,81 @@
+/* ── Loading skeletons ────────────────────────────────────── */
+.lv-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lv-skeleton-link {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  background: var(--bg-2);
+}
+
+.lv-skeleton-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lv-skeleton-favicon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  animation: lv-shimmer 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.lv-skeleton-name {
+  width: 140px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--bg-3);
+  animation: lv-shimmer 1.4s ease-in-out infinite;
+  animation-delay: 0.1s;
+}
+
+.lv-skeleton-tags {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.lv-skeleton-tag {
+  width: 48px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  animation: lv-shimmer 1.4s ease-in-out infinite;
+  animation-delay: 0.2s;
+}
+
+.lv-skeleton-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.lv-skeleton-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  animation: lv-shimmer 1.4s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+
+.lv-skeleton-notes {
+  width: 60%;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--bg-3);
+  margin-top: 10px;
+  animation: lv-shimmer 1.4s ease-in-out infinite;
+  animation-delay: 0.4s;
+}
+
+@keyframes lv-shimmer {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
