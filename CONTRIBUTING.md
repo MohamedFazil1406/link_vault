@@ -48,4 +48,4 @@ Thank you for your interest in contributing to Link Vault! This guide will help 
 - Ensure CI checks pass
 
 ## License
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions will be licensed under the ISC License.
