@@ -157,6 +157,64 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// DELETE bulk links
+router.delete('/bulk', async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "ids array is required" });
+    }
+    // ::bigint[] ensures the JS array matches your database's BigInt ID type
+    const result = await pool.query('DELETE FROM links WHERE id = ANY($1::bigint[]) RETURNING *', [ids]);
+    res.json({ deleted: result.rowCount, rows: result.rows.map(normalize) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to bulk delete links" });
+  }
+});
+
+// PATCH bulk archive
+router.patch('/bulk/archive', async (req, res) => {
+  try {
+    const { ids, archived = true } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "ids array is required" });
+    }
+    const result = await pool.query(
+      'UPDATE links SET archived = $1 WHERE id = ANY($2::bigint[]) RETURNING *', 
+      [archived, ids]
+    );
+    res.json({ updated: result.rowCount, rows: result.rows.map(normalize) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to bulk archive links" });
+  }
+});
+
+// PATCH bulk tag
+router.patch('/bulk/tag', async (req, res) => {
+  try {
+    const { ids, tag } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0 || !tag) {
+      return res.status(400).json({ error: "ids array and tag are required" });
+    }
+    // This PG query appends the tag to the array, but ONLY if the tag doesn't already exist in it.
+    // It handles null/empty tags gracefully using COALESCE.
+    const result = await pool.query(
+      `UPDATE links 
+       SET tags = COALESCE(tags, '{}'::text[]) || $2 
+       WHERE id = ANY($1::bigint[]) 
+       AND NOT ($2 = ANY(COALESCE(tags, '{}'::text[]))) 
+       RETURNING *`,
+      [ids, tag]
+    );
+    res.json({ updated: result.rowCount, rows: result.rows.map(normalize) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to bulk tag links" });
+  }
+});
+
 // DELETE link
 router.delete('/:id', async (req, res) => {
   try {

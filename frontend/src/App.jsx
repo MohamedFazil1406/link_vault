@@ -8,13 +8,17 @@ import CollectionsPage from './components/collectionPage.jsx';
 import AddLinkModal from './components/addlinkbtn.jsx';
 import AddCollectionModal from './components/addcollectionbtn.jsx';
 import ShareTarget from './components/ShareTarget.jsx';
+import BulkTagModal from './components/BulkTagModal.jsx';
+import { BulkActionsBar } from './components/BulkActionsBar';
+
 import {
   getAllLinks, addLink, deleteLink, updateLink,
   getAllCollections, addCollection, deleteCollection,
+  bulkDeleteLinks, bulkArchiveLinks, bulkTagLinks // <-- ADD THIS
 } from "./api.js";
 
 export default function App() {
-  if (window.location.pathname === "/share-target") return <ShareTarget />;
+  if (window.location.pathname === "/share-target") return null;
 
   const [dark, setDark] = useState(() => localStorage.getItem('lv-theme') === 'dark');
   const [collections, setCollections] = useState([]);
@@ -30,13 +34,16 @@ export default function App() {
   const [filterDomain, setFilterDomain] = useState(null);
   const [filterDate, setFilterDate] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Bulk Selection State
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showBulkTagModal, setShowBulkTagModal] = useState(false);
 
-  // Apply dark mode to <html>
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     localStorage.setItem('lv-theme', dark ? 'dark' : 'light');
   }, [dark]);
-
+ 
   useEffect(() => {
     async function load() {
       try {
@@ -44,7 +51,9 @@ export default function App() {
         setLinks(l || []);
         setCollections(c || []);
       } catch (e) {
-        console.error(e);
+        console.error("API Fetch Error:", e);
+        // NOTE: If you see the "<!doctype" error, it means your backend is returning 
+        // an HTML error page (like 404/500) instead of JSON. Check your backend server!
       } finally {
         setLoading(false);
       }
@@ -80,7 +89,10 @@ export default function App() {
       }
       setShowLinkModal(false);
       setEditingLink(null);
-    } catch { alert("Failed to save link."); }
+    } catch (e) { 
+      console.error(e);
+      alert("Failed to save link."); 
+    }
   };
 
   const deleteLink_ = async (id) => {
@@ -88,7 +100,10 @@ export default function App() {
     try {
       await deleteLink(id);
       setLinks(links.filter(l => l.id !== id));
-    } catch { alert("Failed to delete."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete."); 
+    }
   };
 
   const saveCollection = async (data) => {
@@ -96,7 +111,10 @@ export default function App() {
       const c = await addCollection(data);
       setCollections([...collections, c]);
       setShowCollectionModal(false);
-    } catch { alert("Failed to create collection."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to create collection."); 
+    }
   };
 
   const deleteCollection_ = async (id) => {
@@ -104,22 +122,94 @@ export default function App() {
     try {
       await deleteCollection(id);
       setCollections(collections.filter(c => c.id !== id));
-    } catch { alert("Failed to delete."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete."); 
+    }
   };
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify(links, null, 2)], { type: "application/json" });
     const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "linvault-export.json" });
-    a.click(); URL.revokeObjectURL(a.href);
+    a.click(); 
+    URL.revokeObjectURL(a.href);
   };
 
-  const goHome = () => { setActiveCollectionId(null); setSearchTerm(""); setView("home"); };
+  const goHome = () => { 
+    setActiveCollectionId(null); 
+    setSearchTerm(""); 
+    setView("home"); 
+  };
+
+    // --- Bulk Action Handlers ---
+  const toggleSelection = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // bulk delete
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedIds.size} selected links?`)) return;
+    try {
+      const idsArray = Array.from(selectedIds);
+      await bulkDeleteLinks(idsArray);
+      
+      // Update local state instantly
+      setLinks(prev => prev.filter(l => !selectedIds.has(l.id)));
+      clearSelection();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete selected links.");
+    }
+  };
+
+  // bulk archive
+  const handleBulkArchive = async () => {
+    try {
+      const idsArray = Array.from(selectedIds);
+      await bulkArchiveLinks(idsArray, true);
+      
+      // Update local state instantly
+      setLinks(prev => prev.map(l => selectedIds.has(l.id) ? { ...l, archived: true } : l));
+      clearSelection();
+      alert("Selected links archived.");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to archive selected links.");
+    }
+  };
+
+  // bulk tag apply
+  const handleBulkTagApply = async (tag) => {
+    try {
+      const idsArray = Array.from(selectedIds);
+      await bulkTagLinks(idsArray, tag);
+      
+      // Update local state instantly (add tag to existing tags, avoid duplicates)
+      setLinks(prev => prev.map(l => {
+        if (selectedIds.has(l.id)) {
+          const newTags = l.tags ? [...new Set([...l.tags, tag])] : [tag];
+          return { ...l, tags: newTags };
+        }
+        return l;
+      }));
+      clearSelection();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to add tag to selected links.");
+    }
+  };
 
   return (
-    <div className="lv-app">
-      <Sidebar
-        onGoHome={goHome}
-        onGoCollections={() => setView("collections")}
+    <div className="app-container">
+      <Sidebar 
+        onViewChange={setView}
         onAddCollection={() => setShowCollectionModal(true)}
         onExport={exportData}
         dark={dark}
@@ -129,8 +219,8 @@ export default function App() {
         onSelectCollection={(id) => { setActiveCollectionId(id); setView("home"); }}
       />
 
-      <div className="lv-main">
-        <Header
+      <div className="main-content">
+        <Header 
           onAddLink={() => setShowLinkModal(true)}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -140,11 +230,11 @@ export default function App() {
           activeCollectionId={activeCollectionId}
           collections={collections}
           onGoHome={goHome}
-        />
+        /> 
 
         {view === "home" && showFilters && (
-          <FilterBar
-            links={links}
+          <FilterBar 
+            links={links} /* <-- THIS FIXES THE flatMap ERROR */
             filterTag={filterTag}
             filterDomain={filterDomain}
             filterDate={filterDate}
@@ -155,28 +245,27 @@ export default function App() {
           />
         )}
 
-        <div className="lv-content">
-          {loading ? (
-            <div className="lv-loading"><div className="lv-spinner" /></div>
-          ) : view === "home" ? (
-            <Linklist
-              links={filteredLinks}
-              onEditLink={(link) => { setEditingLink(link); setShowLinkModal(true); }}
-              onDeleteLink={(link) => deleteLink_(link.id)}
-            />
-          ) : (
-            <CollectionsPage
-              collections={collections}
-              links={links}
-              onSelectCollection={(id) => { setActiveCollectionId(id); setView("home"); }}
-              onDeleteCollection={deleteCollection_}
-            />
-          )}
-        </div>
+        {loading ? (
+          <div className="lv-empty"><p>Loading...</p></div>
+        ) : view === "home" ? (
+          <Linklist 
+            links={filteredLinks}
+            onEditLink={(link) => { setEditingLink(link); setShowLinkModal(true); }}
+            onDeleteLink={(link) => deleteLink_(link.id)}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelection}
+          />
+        ) : (
+          <CollectionsPage 
+            collections={collections}
+            onSelectCollection={(id) => { setActiveCollectionId(id); setView("home"); }}
+            onDeleteCollection={deleteCollection_}
+          />
+        )}
       </div>
 
       {showLinkModal && (
-        <AddLinkModal
+        <AddLinkModal 
           onClose={() => { setShowLinkModal(false); setEditingLink(null); }}
           onAdd={saveLink}
           collections={collections}
@@ -186,9 +275,26 @@ export default function App() {
       )}
 
       {showCollectionModal && (
-        <AddCollectionModal
+        <AddCollectionModal 
           onClose={() => setShowCollectionModal(false)}
           onAdd={saveCollection}
+        />
+      )}
+
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
+        onDelete={handleBulkDelete}
+        onTag={() => setShowBulkTagModal(true)}
+        onArchive={handleBulkArchive}
+        onClearSelection={clearSelection}
+      />
+
+      {showBulkTagModal && (
+        <BulkTagModal 
+          isOpen={showBulkTagModal}
+          onClose={() => setShowBulkTagModal(false)}
+          onApply={handleBulkTagApply}
+          existingTags={[...new Set(links.flatMap(l => l.tags || []))]}
         />
       )}
     </div>
