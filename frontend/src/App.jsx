@@ -8,14 +8,20 @@ import CollectionsPage from './components/collectionPage.jsx';
 import AddLinkModal from './components/addlinkbtn.jsx';
 import AddCollectionModal from './components/addcollectionbtn.jsx';
 import ShareTarget from './components/ShareTarget.jsx';
+
+// --- MERGED IMPORTS: Keep both Skeleton and Bulk components ---
 import LoadingSkeleton from './components/Skeleton.jsx';
+import BulkTagModal from './components/BulkTagModal.jsx';
+import { BulkActionsBar } from './components/BulkActionsBar';
+
 import {
   getAllLinks, addLink, deleteLink, updateLink,
   getAllCollections, addCollection, deleteCollection,
+  bulkDeleteLinks, bulkArchiveLinks, bulkTagLinks // Bulk API functions
 } from "./api.js";
 
 export default function App() {
-  if (window.location.pathname === "/share-target") return <ShareTarget />;
+  if (window.location.pathname === "/share-target") return null;
 
   const [dark, setDark] = useState(() => localStorage.getItem('lv-theme') === 'dark');
   const [collections, setCollections] = useState([]);
@@ -27,18 +33,25 @@ export default function App() {
   const [editingLink, setEditingLink] = useState(null);
   const [view, setView] = useState("home");
   const [loading, setLoading] = useState(true);
+  
+  // Filters
   const [filterTag, setFilterTag] = useState(null);
   const [filterDomain, setFilterDomain] = useState(null);
   const [filterDate, setFilterDate] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Sorting (from HEAD)
   const [sortBy, setSortBy] = useState('newest');
 
-  // Apply dark mode to <html>
+  // Bulk Selection State (from PR-21)
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showBulkTagModal, setShowBulkTagModal] = useState(false);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     localStorage.setItem('lv-theme', dark ? 'dark' : 'light');
   }, [dark]);
-
+ 
   useEffect(() => {
     async function load() {
       try {
@@ -46,7 +59,7 @@ export default function App() {
         setLinks(l || []);
         setCollections(c || []);
       } catch (e) {
-        console.error(e);
+        console.error("API Fetch Error:", e);
       } finally {
         setLoading(false);
       }
@@ -54,6 +67,7 @@ export default function App() {
     load();
   }, []);
 
+  // 1. Filter links
   const filteredLinks = links.filter(link => {
     const matchesSearch = (link.name || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCollection = activeCollectionId ? link.collectionId === activeCollectionId : true;
@@ -70,18 +84,13 @@ export default function App() {
     return matchesSearch && matchesCollection && matchesTag && matchesDomain && matchesDate;
   });
 
+  // 2. Sort filtered links (from HEAD)
   const sortedLinks = [...filteredLinks].sort((a, b) => {
-    switch (sortBy) {
-      case 'oldest':
-        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-      case 'name-asc':
-        return (a.name || '').localeCompare(b.name || '');
-      case 'name-desc':
-        return (b.name || '').localeCompare(a.name || '');
-      case 'newest':
-      default:
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-    }
+    if (sortBy === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    if (sortBy === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    if (sortBy === 'az') return (a.name || '').localeCompare(b.name || '');
+    if (sortBy === 'za') return (b.name || '').localeCompare(a.name || '');
+    return 0;
   });
 
   const saveLink = async (linkData, colId, notes, tags, existingId) => {
@@ -96,7 +105,10 @@ export default function App() {
       }
       setShowLinkModal(false);
       setEditingLink(null);
-    } catch { alert("Failed to save link."); }
+    } catch (e) { 
+      console.error(e);
+      alert("Failed to save link."); 
+    }
   };
 
   const deleteLink_ = async (id) => {
@@ -104,7 +116,10 @@ export default function App() {
     try {
       await deleteLink(id);
       setLinks(links.filter(l => l.id !== id));
-    } catch { alert("Failed to delete."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete."); 
+    }
   };
 
   const saveCollection = async (data) => {
@@ -112,7 +127,10 @@ export default function App() {
       const c = await addCollection(data);
       setCollections([...collections, c]);
       setShowCollectionModal(false);
-    } catch { alert("Failed to create collection."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to create collection."); 
+    }
   };
 
   const deleteCollection_ = async (id) => {
@@ -120,22 +138,85 @@ export default function App() {
     try {
       await deleteCollection(id);
       setCollections(collections.filter(c => c.id !== id));
-    } catch { alert("Failed to delete."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete."); 
+    }
   };
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify(links, null, 2)], { type: "application/json" });
     const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "linvault-export.json" });
-    a.click(); URL.revokeObjectURL(a.href);
+    a.click(); 
+    URL.revokeObjectURL(a.href);
   };
 
-  const goHome = () => { setActiveCollectionId(null); setSearchTerm(""); setView("home"); };
+  const goHome = () => { 
+    setActiveCollectionId(null); 
+    setSearchTerm(""); 
+    setView("home"); 
+  };
+
+  // --- Bulk Action Handlers ---
+  const toggleSelection = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedIds.size} selected links?`)) return;
+    try {
+      const idsArray = Array.from(selectedIds);
+      await bulkDeleteLinks(idsArray);
+      setLinks(prev => prev.filter(l => !selectedIds.has(l.id)));
+      clearSelection();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete selected links.");
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    try {
+      const idsArray = Array.from(selectedIds);
+      await bulkArchiveLinks(idsArray, true);
+      setLinks(prev => prev.map(l => selectedIds.has(l.id) ? { ...l, archived: true } : l));
+      clearSelection();
+      alert("Selected links archived.");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to archive selected links.");
+    }
+  };
+
+  const handleBulkTagApply = async (tag) => {
+    try {
+      const idsArray = Array.from(selectedIds);
+      await bulkTagLinks(idsArray, tag);
+      setLinks(prev => prev.map(l => {
+        if (selectedIds.has(l.id)) {
+          const newTags = l.tags ? [...new Set([...l.tags, tag])] : [tag];
+          return { ...l, tags: newTags };
+        }
+        return l;
+      }));
+      clearSelection();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to add tag to selected links.");
+    }
+  };
 
   return (
-    <div className="lv-app">
-      <Sidebar
-        onGoHome={goHome}
-        onGoCollections={() => setView("collections")}
+    <div className="app-container">
+      <Sidebar 
+        onViewChange={setView}
         onAddCollection={() => setShowCollectionModal(true)}
         onExport={exportData}
         dark={dark}
@@ -145,8 +226,8 @@ export default function App() {
         onSelectCollection={(id) => { setActiveCollectionId(id); setView("home"); }}
       />
 
-      <div className="lv-main">
-        <Header
+      <div className="main-content">
+        <Header 
           onAddLink={() => setShowLinkModal(true)}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -156,13 +237,14 @@ export default function App() {
           activeCollectionId={activeCollectionId}
           collections={collections}
           onGoHome={goHome}
+          // --- MERGED: Keep sorting props from HEAD ---
           sortBy={sortBy}
           onSortChange={setSortBy}
           showSortBtn={view === "home"}
-        />
+        /> 
 
         {view === "home" && showFilters && (
-          <FilterBar
+          <FilterBar 
             links={links}
             filterTag={filterTag}
             filterDomain={filterDomain}
@@ -174,6 +256,7 @@ export default function App() {
           />
         )}
 
+        {/* --- MERGED: Use LoadingSkeleton from HEAD, but add bulk props from PR-21 --- */}
         <div className="lv-content">
           {loading ? (
             <LoadingSkeleton />
@@ -182,6 +265,8 @@ export default function App() {
               links={sortedLinks}
               onEditLink={(link) => { setEditingLink(link); setShowLinkModal(true); }}
               onDeleteLink={(link) => deleteLink_(link.id)}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelection}
             />
           ) : (
             <CollectionsPage
@@ -195,7 +280,7 @@ export default function App() {
       </div>
 
       {showLinkModal && (
-        <AddLinkModal
+        <AddLinkModal 
           onClose={() => { setShowLinkModal(false); setEditingLink(null); }}
           onAdd={saveLink}
           collections={collections}
@@ -205,9 +290,27 @@ export default function App() {
       )}
 
       {showCollectionModal && (
-        <AddCollectionModal
+        <AddCollectionModal 
           onClose={() => setShowCollectionModal(false)}
           onAdd={saveCollection}
+        />
+      )}
+
+      {/* --- Bulk Actions UI --- */}
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
+        onDelete={handleBulkDelete}
+        onTag={() => setShowBulkTagModal(true)}
+        onArchive={handleBulkArchive}
+        onClearSelection={clearSelection}
+      />
+
+      {showBulkTagModal && (
+        <BulkTagModal 
+          isOpen={showBulkTagModal}
+          onClose={() => setShowBulkTagModal(false)}
+          onApply={handleBulkTagApply}
+          existingTags={[...new Set(links.flatMap(l => l.tags || []))]}
         />
       )}
     </div>
