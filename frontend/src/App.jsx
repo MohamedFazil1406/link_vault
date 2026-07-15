@@ -31,6 +31,7 @@ export default function App() {
   const [filterDomain, setFilterDomain] = useState(null);
   const [filterDate, setFilterDate] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('newest');
 
   // Apply dark mode to <html>
   useEffect(() => {
@@ -67,6 +68,20 @@ export default function App() {
       return true;
     })();
     return matchesSearch && matchesCollection && matchesTag && matchesDomain && matchesDate;
+  });
+
+  const sortedLinks = [...filteredLinks].sort((a, b) => {
+    switch (sortBy) {
+      case 'oldest':
+        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+      case 'name-asc':
+        return (a.name || '').localeCompare(b.name || '');
+      case 'name-desc':
+        return (b.name || '').localeCompare(a.name || '');
+      case 'newest':
+      default:
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    }
   });
 
   const saveLink = async (linkData, colId, notes, tags, existingId) => {
@@ -141,6 +156,9 @@ export default function App() {
           activeCollectionId={activeCollectionId}
           collections={collections}
           onGoHome={goHome}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          showSortBtn={view === "home"}
         />
 
         {view === "home" && showFilters && (
@@ -161,7 +179,7 @@ export default function App() {
             <LoadingSkeleton />
           ) : view === "home" ? (
             <Linklist
-              links={filteredLinks}
+              links={sortedLinks}
               onEditLink={(link) => { setEditingLink(link); setShowLinkModal(true); }}
               onDeleteLink={(link) => deleteLink_(link.id)}
             />

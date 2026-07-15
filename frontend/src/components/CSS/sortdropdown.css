@@ -1,0 +1,88 @@
+/* ── Sort dropdown ── */
+.lv-sort {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.lv-sort-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transition: all var(--transition);
+}
+
+.lv-sort-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+.lv-sort-btn:hover { border-color: var(--border-2); color: var(--text-1); background: var(--bg-2); }
+.lv-sort-btn.active { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
+
+.lv-sort-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  z-index: 100;
+  animation: sort-in 0.12s ease;
+}
+
+@keyframes sort-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.lv-sort-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 8px 6px;
+}
+
+.lv-sort-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  text-align: left;
+}
+
+.lv-sort-option:hover { background: var(--bg-2); color: var(--text-1); }
+.lv-sort-option.selected { color: var(--amber); font-weight: 600; }
+
+.lv-sort-check {
+  width: 14px;
+  height: 14px;
+  stroke: var(--amber);
+  fill: none;
+  stroke-width: 2.5;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .lv-sort-dropdown {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
