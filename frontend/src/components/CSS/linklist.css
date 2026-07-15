@@ -29,21 +29,7 @@
   gap: 10px;
 }
 
-/* Favicon dot */
-.lv-favicon {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  background: var(--amber-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--amber);
-  text-transform: uppercase;
-}
+/* Favicon styles moved to favicon.css */
 
 .lv-link-name {
   flex: 1;

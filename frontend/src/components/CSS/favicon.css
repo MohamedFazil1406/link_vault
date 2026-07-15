@@ -1,0 +1,36 @@
+/* ── Favicon with image ── */
+.lv-favicon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--amber-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.lv-favicon-letter {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+
+.lv-favicon-img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border-radius: 2px;
+  /* Prevent layout shift while loading */
+  min-width: 16px;
+  min-height: 16px;
+}
+
+[data-theme="dark"] .lv-favicon-img {
+  /* In dark mode, favicons with white backgrounds look better
+     with a subtle border to distinguish them from the background */
+  border-radius: 2px;
+  filter: brightness(0.9);
+}
