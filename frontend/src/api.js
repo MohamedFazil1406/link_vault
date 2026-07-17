@@ -54,6 +54,36 @@ export async function deleteLink(id) {
   return await res.json();
 }
 
+// Bulk delete links
+export async function bulkDeleteLinks(ids) {
+  const res = await fetch(`${BASE_URL}/links/bulk`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids })
+  });
+  return await res.json();
+}
+
+// Bulk archive/unarchive links
+export async function bulkArchiveLinks(ids, archived = true) {
+  const res = await fetch(`${BASE_URL}/links/bulk/archive`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids, archived })
+  });
+  return await res.json();
+}
+
+// Bulk add a tag to links
+export async function bulkTagLinks(ids, tag) {
+  const res = await fetch(`${BASE_URL}/links/bulk/tag`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids, tag })
+  });
+  return await res.json();
+}
+
 // ------------------- COLLECTIONS -------------------
 
 // Get all collections

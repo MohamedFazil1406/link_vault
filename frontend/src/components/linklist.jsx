@@ -1,14 +1,6 @@
-import { useState } from 'react';
-import './CSS/linklist.css';
+import { useState } from "react";
 import "./CSS/linklist.css";
-
-function getFavicon(url) {
-  try {
-    return new URL(url).hostname.replace("www.", "")[0].toUpperCase();
-  } catch {
-    return "?";
-  }
-}
+import Favicon from "./Favicon.jsx";
 
 function StatusIcon({ link }) {
   if (link.status === "broken") {
@@ -42,38 +34,54 @@ function CopyButton({ url }) {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement('textarea');
+      const textarea = document.createElement("textarea");
       textarea.value = url;
       document.body.appendChild(textarea);
       textarea.select();
-      document.execCommand('copy');
+      document.execCommand("copy");
       document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
     }
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (
     <button
-      className={`lv-action-btn copy${copied ? ' copied' : ''}`}
+      className={`lv-action-btn copy ${copied ? "copied" : ""}`}
       onClick={handleCopy}
-      title={copied ? 'Copied!' : 'Copy URL'}
+      title={copied ? "Copied!" : "Copy URL"}
     >
       {copied ? (
-        <svg viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+        <svg viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
       ) : (
-        <svg viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        <svg viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+          />
+        </svg>
       )}
     </button>
   );
 }
 
-export default function Linklist({ links, onEditLink, onDeleteLink }) {
-  if (links.length === 0) {
+export default function Linklist({
+  links,
+  onEditLink,
+  onDeleteLink,
+  selectedIds,
+  onToggleSelect,
+}) {
+  if (!links.length) {
     return (
       <div className="lv-empty">
         <div className="lv-empty-icon">
@@ -87,7 +95,7 @@ export default function Linklist({ links, onEditLink, onDeleteLink }) {
         </div>
 
         <h3>No links yet</h3>
-        <p>Hit "Add link" to save your first one</p>
+        <p>Hit "Add link" to save your first one.</p>
       </div>
     );
   }
@@ -95,12 +103,26 @@ export default function Linklist({ links, onEditLink, onDeleteLink }) {
   return (
     <div className="lv-list">
       {links.map((link) => {
-        const displayTags = (link.tags || []).filter((t) => !t.includes("."));
+        const isSelected = selectedIds?.has(link.id) || false;
+        const displayTags = (link.tags || []).filter(
+          (tag) => !tag.includes("."),
+        );
 
         return (
-          <div key={link.id} className="lv-link">
+          <div
+            key={link.id}
+            className={`lv-link ${isSelected ? "selected" : ""}`}
+          >
             <div className="lv-link-top">
-              <div className="lv-favicon">{getFavicon(link.url)}</div>
+              <input
+                type="checkbox"
+                className="lv-checkbox"
+                checked={isSelected}
+                onChange={() => onToggleSelect?.(link.id)}
+                onClick={(e) => e.stopPropagation()}
+              />
+
+              <Favicon url={link.url} />
 
               <div className="lv-link-title">
                 <a
@@ -115,20 +137,9 @@ export default function Linklist({ links, onEditLink, onDeleteLink }) {
                 <StatusIcon link={link} />
               </div>
 
-              {displayTags.length > 0 && (
-                <div className="lv-link-tags">
-                  {displayTags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="lv-tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-
               <div className="lv-link-actions">
                 <CopyButton url={link.url} />
-                <button className="lv-action-btn edit" onClick={() => onEditLink(link)} title="Edit">
-                  <svg viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+
                 <button
                   className="lv-action-btn edit"
                   onClick={() => onEditLink(link)}
@@ -158,6 +169,16 @@ export default function Linklist({ links, onEditLink, onDeleteLink }) {
                 </button>
               </div>
             </div>
+
+            {displayTags.length > 0 && (
+              <div className="lv-link-tags">
+                {displayTags.slice(0, 3).map((tag) => (
+                  <span key={tag} className="lv-tag">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {link.notes && <div className="lv-link-notes">{link.notes}</div>}
           </div>

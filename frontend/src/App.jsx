@@ -8,13 +8,17 @@ import CollectionsPage from './components/collectionPage.jsx';
 import AddLinkModal from './components/addlinkbtn.jsx';
 import AddCollectionModal from './components/addcollectionbtn.jsx';
 import ShareTarget from './components/ShareTarget.jsx';
+import LoadingSkeleton from './components/Skeleton.jsx';
+import BulkTagModal from './components/BulkTagModal.jsx';
+import { BulkActionsBar } from './components/BulkActionsBar.jsx';
 import {
   getAllLinks, addLink, deleteLink, updateLink,
   getAllCollections, addCollection, deleteCollection,
+  bulkDeleteLinks, bulkArchiveLinks, bulkTagLinks
 } from "./api.js";
 
 export default function App() {
-  if (window.location.pathname === "/share-target") return <ShareTarget />;
+  if (window.location.pathname === "/share-target") return null;
 
   const [dark, setDark] = useState(() => localStorage.getItem('lv-theme') === 'dark');
   const [collections, setCollections] = useState([]);
@@ -30,8 +34,11 @@ export default function App() {
   const [filterDomain, setFilterDomain] = useState(null);
   const [filterDate, setFilterDate] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('newest');
+  const [showArchived, setShowArchived] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showBulkTagModal, setShowBulkTagModal] = useState(false);
 
-  // Apply dark mode to <html>
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     localStorage.setItem('lv-theme', dark ? 'dark' : 'light');
@@ -44,7 +51,7 @@ export default function App() {
         setLinks(l || []);
         setCollections(c || []);
       } catch (e) {
-        console.error(e);
+        console.error("API Fetch Error:", e);
       } finally {
         setLoading(false);
       }
@@ -65,7 +72,17 @@ export default function App() {
       if (filterDate === "month") return d >= new Date(now - 30 * 86400000);
       return true;
     })();
-    return matchesSearch && matchesCollection && matchesTag && matchesDomain && matchesDate;
+    // Only show if it's NOT archived, OR if the user explicitly turned on "showArchived"
+    const isVisible = showArchived ? true : !link.archived;
+    return matchesSearch && matchesCollection && matchesTag && matchesDomain && matchesDate && isVisible;
+  });
+
+  const sortedLinks = [...filteredLinks].sort((a, b) => {
+    if (sortBy === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    if (sortBy === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    if (sortBy === 'az') return (a.name || '').localeCompare(b.name || '');
+    if (sortBy === 'za') return (b.name || '').localeCompare(a.name || '');
+    return 0;
   });
 
   const saveLink = async (linkData, colId, notes, tags, existingId) => {
@@ -80,7 +97,10 @@ export default function App() {
       }
       setShowLinkModal(false);
       setEditingLink(null);
-    } catch { alert("Failed to save link."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save link.");
+    }
   };
 
   const deleteLink_ = async (id) => {
@@ -88,7 +108,10 @@ export default function App() {
     try {
       await deleteLink(id);
       setLinks(links.filter(l => l.id !== id));
-    } catch { alert("Failed to delete."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete.");
+    }
   };
 
   const saveCollection = async (data) => {
@@ -96,7 +119,10 @@ export default function App() {
       const c = await addCollection(data);
       setCollections([...collections, c]);
       setShowCollectionModal(false);
-    } catch { alert("Failed to create collection."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to create collection.");
+    }
   };
 
   const deleteCollection_ = async (id) => {
@@ -104,22 +130,95 @@ export default function App() {
     try {
       await deleteCollection(id);
       setCollections(collections.filter(c => c.id !== id));
-    } catch { alert("Failed to delete."); }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete.");
+    }
   };
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify(links, null, 2)], { type: "application/json" });
     const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "linvault-export.json" });
-    a.click(); URL.revokeObjectURL(a.href);
+    a.click();
+    URL.revokeObjectURL(a.href);
   };
 
-  const goHome = () => { setActiveCollectionId(null); setSearchTerm(""); setView("home"); };
+  const goHome = () => {
+    setActiveCollectionId(null);
+    setSearchTerm("");
+    setView("home");
+  };
+
+  const toggleSelection = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedIds.size} selected links?`)) return;
+    try {
+      const idsArray = Array.from(selectedIds);
+      await bulkDeleteLinks(idsArray);
+      setLinks(prev => prev.filter(l => !selectedIds.has(l.id)));
+      clearSelection();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete selected links.");
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    try {
+      const idsArray = Array.from(selectedIds);
+      const selectedLinks = links.filter(l => selectedIds.has(l.id));
+      
+      // If ALL selected links are already archived, we want to restore them (false)
+      // Otherwise, we archive them (true)
+      const allArchived = selectedLinks.length > 0 && selectedLinks.every(l => l.archived);
+      const newArchivedState = !allArchived; 
+
+      await bulkArchiveLinks(idsArray, newArchivedState);
+      setLinks(prev => prev.map(l => selectedIds.has(l.id) ? { ...l, archived: newArchivedState } : l));
+      clearSelection();
+      alert(allArchived ? "Selected links restored!" : "Selected links archived.");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to update archive status.");
+    }
+  };
+
+  const handleBulkTagApply = async (tag) => {
+    try {
+      const idsArray = Array.from(selectedIds);
+      await bulkTagLinks(idsArray, tag);
+      setLinks(prev => prev.map(l => {
+        if (selectedIds.has(l.id)) {
+          const newTags = l.tags ? [...new Set([...l.tags, tag])] : [tag];
+          return { ...l, tags: newTags };
+        }
+        return l;
+      }));
+      clearSelection();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to add tag to selected links.");
+    }
+  };
+
+  // ✅ FIX: Define these right before the return statement so they are in scope
+  const selectedLinks = links.filter(l => selectedIds.has(l.id));
+  const isArchived = selectedLinks.length > 0 && selectedLinks.every(l => l.archived);
 
   return (
-    <div className="lv-app">
+    <div className="app-container">
       <Sidebar
-        onGoHome={goHome}
-        onGoCollections={() => setView("collections")}
+        onViewChange={setView}
         onAddCollection={() => setShowCollectionModal(true)}
         onExport={exportData}
         dark={dark}
@@ -128,9 +227,8 @@ export default function App() {
         activeCollectionId={activeCollectionId}
         onSelectCollection={(id) => { setActiveCollectionId(id); setView("home"); }}
       />
-
-      <div className="lv-main">
-        <Header
+      <div className="main-content">
+        <Header 
           onAddLink={() => setShowLinkModal(true)}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -140,10 +238,19 @@ export default function App() {
           activeCollectionId={activeCollectionId}
           collections={collections}
           onGoHome={goHome}
-        />
-
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          showSortBtn={view === "home"}
+        /> 
+        <button 
+          onClick={() => setShowArchived(!showArchived)} 
+          className={`lv-btn-secondary ${showArchived ? 'active' : ''}`}
+          style={{ marginLeft: '10px', opacity: showArchived ? 1 : 0.7, marginBottom: '10px' }}
+        >
+          {showArchived ? "Hide Archived" : "Show Archived"}
+        </button>
         {view === "home" && showFilters && (
-          <FilterBar
+          <FilterBar 
             links={links}
             filterTag={filterTag}
             filterDomain={filterDomain}
@@ -154,15 +261,16 @@ export default function App() {
             onClear={() => { setFilterTag(null); setFilterDomain(null); setFilterDate(null); }}
           />
         )}
-
         <div className="lv-content">
           {loading ? (
-            <div className="lv-loading"><div className="lv-spinner" /></div>
+            <LoadingSkeleton />
           ) : view === "home" ? (
             <Linklist
-              links={filteredLinks}
+              links={sortedLinks}
               onEditLink={(link) => { setEditingLink(link); setShowLinkModal(true); }}
               onDeleteLink={(link) => deleteLink_(link.id)}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelection}
             />
           ) : (
             <CollectionsPage
@@ -174,9 +282,8 @@ export default function App() {
           )}
         </div>
       </div>
-
       {showLinkModal && (
-        <AddLinkModal
+        <AddLinkModal 
           onClose={() => { setShowLinkModal(false); setEditingLink(null); }}
           onAdd={saveLink}
           collections={collections}
@@ -184,11 +291,26 @@ export default function App() {
           allTags={[...new Set(links.flatMap(l => l.tags || []))]}
         />
       )}
-
       {showCollectionModal && (
-        <AddCollectionModal
+        <AddCollectionModal 
           onClose={() => setShowCollectionModal(false)}
           onAdd={saveCollection}
+        />
+      )}
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
+        onDelete={handleBulkDelete}
+        onTag={() => setShowBulkTagModal(true)}
+        onArchive={handleBulkArchive}
+        onClearSelection={clearSelection}
+        isArchived={isArchived}
+      />
+      {showBulkTagModal && (
+        <BulkTagModal 
+          isOpen={showBulkTagModal}
+          onClose={() => setShowBulkTagModal(false)}
+          onApply={handleBulkTagApply}
+          existingTags={[...new Set(links.flatMap(l => l.tags || []))]}
         />
       )}
     </div>
